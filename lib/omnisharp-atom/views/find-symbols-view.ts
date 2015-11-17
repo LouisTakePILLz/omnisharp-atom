@@ -1,4 +1,4 @@
-import * as OmniSelectListView from "../services/omni-select-list-view";
+import OmniSelectListView from "../services/omni-select-list-view";
 import Omni from "../../omni-sharp-server/omni";
 
 class FindSymbolsView extends OmniSelectListView {
@@ -9,7 +9,7 @@ class FindSymbolsView extends OmniSelectListView {
         this.setMaxItems(50);
     }
 
-    public viewForItem(item) {
+    public viewForItem(item: any) {
         return `<li>
             <span>
                 <img style="margin-right: 0.75em;" height="16px" width="16px" src="atom://omnisharp-atom/styles/icons/autocomplete_${item.Kind.toLowerCase()}@3x.png" />
@@ -24,7 +24,7 @@ class FindSymbolsView extends OmniSelectListView {
         return "Text";
     }
 
-    public confirmed(item) {
+    public confirmed(item: any): any {
         this.cancel();
         this.hide();
 
@@ -41,4 +41,4 @@ class FindSymbolsView extends OmniSelectListView {
     }
 }
 
-export = FindSymbolsView;
+export default FindSymbolsView;

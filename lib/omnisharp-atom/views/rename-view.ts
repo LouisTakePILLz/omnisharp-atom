@@ -1,13 +1,8 @@
 import * as spacePenViews from "atom-space-pen-views";
-const $ = spacePenViews.jQuery;
-const TextEditorView = <any>spacePenViews.TextEditorView;
 
 import Omni from "../../omni-sharp-server/omni";
 
 class RenameView extends spacePenViews.View {
-    private wordToRename = null;
-    public miniEditor: spacePenViews.TextEditorView;
-
     public static content() {
         return this.div({
             "class": "rename overlay from-top"
@@ -23,12 +18,14 @@ class RenameView extends spacePenViews.View {
         });
     }
 
+    public miniEditor: spacePenViews.TextEditorView;
+
     public initialize() {
         atom.commands.add(this[0], "core:confirm", () => this.rename());
         atom.commands.add(this[0], "core:cancel", () => this.destroy());
     }
 
-    public configure(wordToRename) {
+    public configure(wordToRename: string) {
         this.miniEditor.setText(wordToRename);
         return this.miniEditor.focus();
     }
@@ -46,4 +43,4 @@ class RenameView extends spacePenViews.View {
         return this.detach();
     }
 }
-export = RenameView;
+export default RenameView;

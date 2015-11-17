@@ -1,4 +1,4 @@
-import {OmniSharp, OmniSharpAtom} from "../../omnisharp.d.ts";
+import {OmniSharp} from "../../omnisharp.ts";
 import * as _ from "lodash";
 import * as path from "path";
 import Omni from "../../omni-sharp-server/omni";
@@ -46,7 +46,7 @@ export class CodeCheckOutputWindow<T extends ICodeCheckOutputWindowProps> extend
         super.componentDidMount();
 
         React.findDOMNode(this).scrollTop = this.props.scrollTop();
-        (<any>React.findDOMNode(this)).onkeydown = (e) => this.keydownPane(e);
+        (<any>React.findDOMNode(this)).onkeydown = (e: any) => this.keydownPane(e);
     }
 
     public componentWillUnmount() {
@@ -60,13 +60,11 @@ export class CodeCheckOutputWindow<T extends ICodeCheckOutputWindowProps> extend
     }
 
     private keydownPane(e: any) {
-        if (e.keyIdentifier == "Down") {
+        if (e.keyIdentifier === "Down") {
             atom.commands.dispatch(atom.views.getView(atom.workspace), "omnisharp-atom:next-diagnostic");
-        }
-        else if (e.keyIdentifier == "Up") {
+        } else if (e.keyIdentifier === "Up") {
             atom.commands.dispatch(atom.views.getView(atom.workspace), "omnisharp-atom:previous-diagnostic");
-        }
-        else if (e.keyIdentifier == "Enter") {
+        } else if (e.keyIdentifier === "Enter") {
             atom.commands.dispatch(atom.views.getView(atom.workspace), "omnisharp-atom:go-to-diagnostic");
         }
     }
@@ -85,13 +83,15 @@ export class CodeCheckOutputWindow<T extends ICodeCheckOutputWindowProps> extend
         const desiredTop = item.position().top + scrollTop;
         const desiredBottom = desiredTop + item.outerHeight();
 
-        if (desiredTop < scrollTop)
+        if (desiredTop < scrollTop) {
             pane.scrollTop(desiredTop);
-        else if (desiredBottom > pane.scrollBottom())
+        } else if (desiredBottom > pane.scrollBottom()) {
             pane.scrollBottom(desiredBottom);
+        }
     }
 
     public render() {
+        /* tslint:disable:no-string-literal */
         return React.DOM.div({
             className: "codecheck-output-pane " + (this.props["className"] || ""),
             onScroll: (e) => {
@@ -115,11 +115,12 @@ export class CodeCheckOutputWindow<T extends ICodeCheckOutputWindowProps> extend
                     }, error.Text),
                     React.DOM.pre({
                         className: "inline-block"
-                    }, `${path.basename(error.FileName) }(${error.Line},${error.Column})`),
+                    }, `${path.basename(error.FileName)}(${error.Line},${error.Column})`),
                     React.DOM.pre({
                         className: "text-subtle inline-block"
-                    }, `${path.dirname(error.FileName) }`)
-                    ))
-                ));
+                    }, `${path.dirname(error.FileName)}`)
+                ))
+            ));
+        /* tslint:enable:no-string-literal */
     }
 }

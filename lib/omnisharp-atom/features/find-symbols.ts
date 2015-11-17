@@ -1,7 +1,7 @@
-import {OmniSharpAtom} from "../../omnisharp.d.ts";
+import {OmniSharpAtom} from "../../omnisharp.ts";
 import {CompositeDisposable} from "../../Disposable";
 import Omni from "../../omni-sharp-server/omni";
-import * as FindSymbolsView from "../views/find-symbols-view";
+import FindSymbolsView from "../views/find-symbols-view";
 
 class FindSymbols implements OmniSharpAtom.IFeature {
     private disposable: CompositeDisposable;

@@ -1,6 +1,5 @@
-import {Disposable, Observable} from "@reactivex/rxjs";
+import {Observable} from "@reactivex/rxjs";
 import * as _ from "lodash";
-import Omni from "../../omni-sharp-server/omni";
 import * as React from "react";
 import {ReactClientComponent} from "./react-client-component";
 
@@ -11,8 +10,6 @@ interface ICommandOutputWindowState {
 export class CommandOutputWindow extends ReactClientComponent<{ update: Observable<{ message: string }[]>; output: { message: string }[] }, ICommandOutputWindowState>  {
     public displayName = "CommandOutputWindow";
 
-    private _convert;
-
     constructor(props?: { update: Observable<{ id: number; message: string }[]>; output: { message: string }[] }, context?: any) {
         super(props, context);
         this.state = { output: props.output };
@@ -22,7 +19,7 @@ export class CommandOutputWindow extends ReactClientComponent<{ update: Observab
     }
 
     private scrollToBottom() {
-        const item = <any> React.findDOMNode(this).lastElementChild.lastElementChild;
+        const item = <any>React.findDOMNode(this).lastElementChild.lastElementChild;
         if (item) item.scrollIntoViewIfNeeded();
     }
 
@@ -33,6 +30,7 @@ export class CommandOutputWindow extends ReactClientComponent<{ update: Observab
     }
 
     public render() {
+        /* tslint:disable:no-string-literal */
         return React.DOM.div({
             className: "omni-output-pane-view native-key-bindings " + (this.props["className"] || ""),
             tabIndex: -1
@@ -40,5 +38,6 @@ export class CommandOutputWindow extends ReactClientComponent<{ update: Observab
             React.DOM.div({
                 className: "messages-container"
             }, _.map(this.state.output, (item, index) => this.createItem(item, index))));
+        /* tslint:enable:no-string-literal */
     }
 }

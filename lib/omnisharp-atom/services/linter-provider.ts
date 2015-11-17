@@ -1,8 +1,11 @@
-import {OmniSharp, OmniSharpAtom} from "../../omnisharp.d.ts";
+import {OmniSharp} from "../../omnisharp.ts";
 import Omni from "../../omni-sharp-server/omni";
+/*  tslint:disable:variable-name */
 const Range = require("atom").Range;
+/*  tslint:enable:variable-name */
 import * as _ from "lodash";
-import {Observable, CompositeDisposable, Subject} from "@reactivex/rxjs";
+import {CompositeDisposable} from "../../Disposable";
+import {Observable} from "@reactivex/rxjs";
 import {codeCheck} from "../features/code-check";
 
 interface LinterError {
@@ -18,7 +21,7 @@ function getWordAt(str: string, pos: number) {
     const wordLocation = {
         start: pos,
         end: pos
-    }
+    };
 
     if (str === undefined) {
         return wordLocation;
@@ -72,7 +75,7 @@ function hideLinter() {
 
 export function init() {
     const disposable = new CompositeDisposable();
-    const cd: CompositeDisposable;
+    let cd: CompositeDisposable;
     disposable.add(atom.config.observe("omnisharp-atom.hideLinterInterface", hidden => {
         if (hidden) {
             cd = new CompositeDisposable();
@@ -101,7 +104,7 @@ export function init() {
 
 export const provider = [
     {
-        get grammarScopes() { return Omni.grammars.map((x: any) => x.scopeName) },
+        get grammarScopes() { return Omni.grammars.map((x: any) => x.scopeName); },
         scope: "file",
         lintOnFly: true,
         lint: (editor: Atom.TextEditor) => {
@@ -112,14 +115,14 @@ export const provider = [
             return Omni.diagnostics
                 .take(1)
                 .mergeMap(x => x)
-                .filter(z =>z.FileName === path)
+                .filter(z => z.FileName === path)
                 .filter(z => z.LogLevel !== "Hidden")
                 .map(error => mapValues(editor, error))
                 .toArray()
                 .toPromise();
         }
     }, {
-        get grammarScopes() { return Omni.grammars.map((x: any) => x.scopeName) },
+        get grammarScopes() { return Omni.grammars.map((x: any) => x.scopeName); },
         scope: "project",
         lintOnFly: false,
         lint: (editor: Atom.TextEditor) => {
@@ -127,7 +130,7 @@ export const provider = [
 
             return Omni.activeModel
                 .mergeMap(x => Observable.from(x.diagnostics))
-                .filter(z => z.LogLevel != "Hidden")
+                .filter(z => z.LogLevel !== "Hidden")
                 .map(error => mapValues(editor, error))
                 .toArray()
                 .toPromise();

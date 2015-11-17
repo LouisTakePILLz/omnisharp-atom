@@ -1,11 +1,11 @@
-import {OmniSharp, OmniSharpAtom} from "../../omnisharp.d.ts";
+import {OmniSharp} from "../../omnisharp.ts";
 import * as SpacePen from "atom-space-pen-views";
 import * as $ from "jquery";
 
 class OmniSelectListView extends SpacePen.SelectListView {
     public panel: Atom.Panel;
-    private items = [];
-    private list;
+    private items: any[] = [];
+    private list: any;
 
     constructor(placeholderText : string) {
         super({ placeholderText: placeholderText });
@@ -24,13 +24,11 @@ class OmniSelectListView extends SpacePen.SelectListView {
             for (let i = 0; i < Math.min(symbols.length, this.maxItems); i++) {
                 const item = symbols[i];
                 const itemView = $(this.viewForItem(item));
-                itemView.data("select-list-item", item)
-                this.list.append(itemView)
+                itemView.data("select-list-item", item);
+                this.list.append(itemView);
             }
 
-            this.selectItemView(this.list.find("li:first"))
-        } else {
-
+            this.selectItemView(this.list.find("li:first"));
         }
     }
 
@@ -49,7 +47,7 @@ class OmniSelectListView extends SpacePen.SelectListView {
     }
 
     public onFilter(filter : string) : void {
-        throw new Error("Subclass must implement an onFilter(filter) method")
+        throw new Error("Subclass must implement an onFilter(filter) method");
     }
 
     public getMinQueryLength() : number {
@@ -61,4 +59,4 @@ class OmniSelectListView extends SpacePen.SelectListView {
     }
 }
 
-export = OmniSelectListView;
+export default OmniSelectListView;

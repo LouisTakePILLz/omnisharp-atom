@@ -1,4 +1,4 @@
-import {OmniSharp, OmniSharpAtom} from "../../omnisharp.d.ts";
+import {OmniSharp, OmniSharpAtom} from "../../omnisharp.ts";
 import {CompositeDisposable, Disposable} from "../../Disposable";
 import {ProjectViewModel} from "../../omni-sharp-server/project-view-model";
 import Omni from "../../omni-sharp-server/omni";

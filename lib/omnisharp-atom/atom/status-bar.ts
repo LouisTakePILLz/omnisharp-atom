@@ -1,4 +1,4 @@
-import {OmniSharpAtom} from "../../omnisharp.d.ts";
+import {OmniSharpAtom} from "../../omnisharp.ts";
 import {CompositeDisposable, Disposable} from "../../Disposable";
 import {StatusBarElement} from "../views/status-bar-view";
 

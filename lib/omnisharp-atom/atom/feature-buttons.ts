@@ -1,4 +1,4 @@
-import {OmniSharpAtom} from "../../omnisharp.d.ts";
+import {OmniSharpAtom} from "../../omnisharp.ts";
 import {CompositeDisposable, Disposable, IDisposable} from "../../Disposable";
 import {each} from "lodash";
 import Omni from "../../omni-sharp-server/omni";

@@ -1,4 +1,4 @@
-import {OmniSharpAtom} from "../../omnisharp.d.ts";
+import {OmniSharpAtom} from "../../omnisharp.ts";
 import {CompositeDisposable, SingleAssignmentDisposable, Disposable, IDisposable} from "../../Disposable";
 import * as _ from "lodash";
 import {DockWindow, DockPane, DockButton, IDockWindowProps, DocPaneOptions, DocButtonOptions} from "../views/dock-window";

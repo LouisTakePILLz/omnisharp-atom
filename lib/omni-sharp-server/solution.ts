@@ -1,4 +1,4 @@
-import {OmniSharp, OmniSharpAtom} from "../omnisharp.d.ts";
+import {OmniSharp, OmniSharpAtom} from "../omnisharp.ts";
 import * as _ from "lodash";
 import {CompositeDisposable} from "../Disposable";
 import {Observable, Subject} from "@reactivex/rxjs";
@@ -46,7 +46,6 @@ export class Solution extends ClientV2 {
 
     public toggle() {
         if (this.currentState === DriverState.Disconnected) {
-            const path = atom && atom.project && atom.project.getPaths()[0];
             this.connect();
         } else {
             this.disconnect();
@@ -161,7 +160,7 @@ export class Solution extends ClientV2 {
             this._solutionDisposable.add(branchSubject);
 
             this._solutionDisposable.add(this.repository.onDidChangeStatuses(() => {
-                branchSubject.next(this.repository["branch"]);
+                branchSubject.next((<any>this.repository).branch);
             }));
         }
     }

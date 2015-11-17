@@ -1,11 +1,9 @@
 //const Convert = require("ansi-to-html")
 import * as _ from "lodash";
-import {SingleAssignmentDisposable, Disposable, CompositeDisposable, IDisposable} from "../../Disposable";
+import {CompositeDisposable, IDisposable} from "../../Disposable";
 import {Observable, Subject} from "@reactivex/rxjs";
-import Omni from "../../omni-sharp-server/omni";
 import * as React from "react";
 import {ReactClientComponent} from "./react-client-component";
-import {findUsages} from "../features/find-usages";
 
 interface IDockWindowState {
     selected?: string;
@@ -120,7 +118,7 @@ class DockWindows<T extends IDockWindowButtonsProps> extends ReactClientComponen
             React.DOM.div({ className: "btn-group btn-toggle" },
                 this.getPanelButtons())
             ),
-            React.DOM.div({className:"btn-well pull-right btn-group"},
+            React.DOM.div({className: "btn-well pull-right btn-group"},
                 this.getButtons())
         );
     }
@@ -131,11 +129,9 @@ export class DockWindow<T extends IDockWindowProps> extends ReactClientComponent
 
     public get selected() { return this.state.selected; }
     private visible = false;
-    public get isOpen() { return this.visible }
+    public get isOpen() { return this.visible; }
     private height = 0;
     private tempHeight = 0;
-
-    private _convert: any;
 
     constructor(props?: T, context?: any) {
         super(props, context);
@@ -239,7 +235,7 @@ export class DockWindow<T extends IDockWindowProps> extends ReactClientComponent
 
         if (window) {
             const props = _.clone(window.props);
-            props.className = (this.isSelected((window.id)) + " " + (props.className || ""))
+            props.className = (this.isSelected((window.id)) + " " + (props.className || ""));
             props.key = window.id;
             return React.createElement(window.view, props);
         }
@@ -291,7 +287,7 @@ function makeRxReactEventHandler<T>() {
     return {
         handler: <(value: T) => void> subject.next.bind(subject),
         observable: <Observable<T>>subject
-    }
+    };
 }
 
 interface IResizeProps {
@@ -305,7 +301,6 @@ export class Resizer<T extends IResizeProps> extends React.Component<T, {}> {
     private disposable = new CompositeDisposable();
 
     public componentDidMount() {
-        const node = React.findDOMNode(this);
         const mousemove = Observable.fromEvent<MouseEvent>(document.body, "mousemove").share();
         const mouseup = Observable.fromEvent<MouseEvent>(document.body, "mouseup").share();
         const mousedown = this._mousedown.observable;
@@ -326,12 +321,11 @@ export class Resizer<T extends IResizeProps> extends React.Component<T, {}> {
             }).takeUntil(mouseup);
         });
 
-        mousedown.switchMap(x => mousemove.skipUntil(mouseup)).subscribe(() => this.props.done())
+        mousedown.switchMap(x => mousemove.skipUntil(mouseup)).subscribe(() => this.props.done());
         this.disposable.add(mousedrag.subscribe(this.props.update));
     }
 
     public componentWillUnmount() {
-        const node = React.findDOMNode(this);
         this.disposable.dispose();
     }
 

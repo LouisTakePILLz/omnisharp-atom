@@ -1,4 +1,4 @@
-import {OmniSharpAtom} from "../../omnisharp.d.ts";
+import {OmniSharpAtom} from "../../omnisharp.ts";
 import {CompositeDisposable} from "../../Disposable";
 import {Observable, Scheduler} from "@reactivex/rxjs";
 import Omni from "../../omni-sharp-server/omni";

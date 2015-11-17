@@ -1,13 +1,12 @@
+import {Subscription} from "@reactivex/rxjs";
 import * as _ from "lodash";
 import {basename} from "path";
-import Omni from "../../omni-sharp-server/omni";
 import * as React from "react";
 import {ReactClientComponent} from "./react-client-component";
 import {solutionInformation} from "../atom/solution-information";
 import {ViewModel} from "../../omni-sharp-server/view-model";
 import {DriverState} from "omnisharp-client";
 import * as $ from "jquery";
-import {Observable} from "@reactivex/rxjs";
 
 interface ICardState {
     model: ViewModel;
@@ -26,14 +25,14 @@ interface ISolutionStatusWindowProps {
     solutionInformation: typeof solutionInformation;
 }
 
-function truncateStringReverse(str: string, maxLength: number = 55) {
+function truncateStringReverse(str: string, maxLength = 55) {
     const reversedString = _.toArray(str).reverse().join("");
     return _.toArray(_.trunc(reversedString, maxLength)).reverse().join("");
 }
 
 export class SolutionStatusCard<T extends ICardProps> extends ReactClientComponent<T, ICardState> {
     public displayName = "Card";
-    private updatesDisposable: Disposable;
+    private updatesDisposable: Subscription<ViewModel>;
 
     constructor(props?: T, context?: any) {
         super(props, context);
@@ -48,7 +47,7 @@ export class SolutionStatusCard<T extends ICardProps> extends ReactClientCompone
     public componentWillUpdate(nextProps: T, nextState: ICardState) {
         if (this.state.model.uniqueId !== nextState.model.uniqueId && this.updatesDisposable) {
             this.disposable.remove(this.updatesDisposable);
-            this.updatesDisposable.dispose();
+            this.updatesDisposable.unsubscribe();
             this.updatesDisposable = nextState.model.observe.state.debounceTime(500).subscribe(() => this.setState(<any>{}));
         }
     }
@@ -85,7 +84,7 @@ export class SolutionStatusCard<T extends ICardProps> extends ReactClientCompone
     }
 
     private getButtons() {
-        const buttons = [];
+        const buttons: any[] = [];
 
         if (this.state.model.isReady) {
             buttons.push(React.DOM.button({
@@ -113,7 +112,6 @@ export class SolutionStatusCard<T extends ICardProps> extends ReactClientCompone
     }
 
     private getProjects() {
-        const projects = [];
         return this.state.model.projects.map(
             project => {
                 const path = truncateStringReverse(project.path.replace(this.state.model.path, ""), 24);
@@ -169,8 +167,9 @@ export class SolutionStatusCard<T extends ICardProps> extends ReactClientCompone
                 }, this.state.model.runtime)));
         }
 
+        let projects: any;
         if (this.state.model.projects.length) {
-            const projects = React.DOM.div({ className: "meta meta-projects" },
+            projects = React.DOM.div({ className: "meta meta-projects" },
                 React.DOM.div({ className: "header" }, "Projects"),
                 this.getProjects());
         }

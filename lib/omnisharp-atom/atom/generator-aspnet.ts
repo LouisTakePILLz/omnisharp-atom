@@ -1,4 +1,4 @@
-import {OmniSharpAtom} from "../../omnisharp.d.ts";
+import {OmniSharpAtom} from "../../omnisharp.ts";
 import {CompositeDisposable} from "../../Disposable";
 import {Observable} from "@reactivex/rxjs";
 import {each, endsWith, filter} from "lodash";

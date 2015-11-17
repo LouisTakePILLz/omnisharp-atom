@@ -4,7 +4,7 @@ import {Observable, Subject} from "@reactivex/rxjs";
 import * as path from "path";
 import * as fs from "fs";
 import {fromNodeCallback} from "../fromCallback";
-import {OmniSharpAtom} from "../omnisharp.d.ts";
+import {OmniSharpAtom} from "../omnisharp.ts";
 
 // TODO: Remove these at some point to stream line startup.
 import Omni from "../omni-sharp-server/omni";
@@ -80,7 +80,7 @@ class OmniSharpAtom {
         function loadFeature(file: string) {
             const result = require(`./${folder}/${file}`);
             console.info(`Loading feature "${folder}/${file}"...`);
-            return result;//_.values(result).filter(feature => !_.isFunction(feature));
+            return result; //_.values(result).filter(feature => !_.isFunction(feature));
         }
 
         return fromNodeCallback<string[], string>(fs.readdir)(featureDir)
@@ -211,7 +211,7 @@ class OmniSharpAtom {
             /* tslint:enable:no-string-literal */
         }
 
-        this.disposable.add(Disposable.create(() => { try { value.dispose() } catch (ex) { } }));
+        this.disposable.add(Disposable.create(() => { try { value.dispose(); } catch (ex) { /* */ } }));
         return result;
     }
 
@@ -409,7 +409,7 @@ class OmniSharpAtom {
             type: "boolean",
             default: win32
         }
-    }
+    };
 }
 
 const instance = new OmniSharpAtom;

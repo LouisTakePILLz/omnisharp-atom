@@ -1,5 +1,5 @@
 import * as _ from "lodash";
-import {OmniSharp, OmniSharpAtom} from "../omnisharp.d.ts";
+import {OmniSharp, OmniSharpAtom} from "../omnisharp.ts";
 import {Solution} from "./solution";
 import {DriverState, OmnisharpClientStatus} from "omnisharp-client";
 import {IDisposable, CompositeDisposable, Disposable} from "../Disposable";

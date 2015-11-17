@@ -1,20 +1,13 @@
-import {OmniSharp, OmniSharpAtom} from "../../omnisharp.d.ts";
+import {OmniSharp} from "../../omnisharp.ts";
 import {read, write} from "fastdom";
 import * as _ from "lodash";
-
-function _d(cb: (value: Function) => Function) {
-    return <MethodDecorator>function(target: Function, key: string, descriptor: any) {
-        descriptor.value = cb(descriptor.value);
-        return descriptor;
-    }
-}
 
 const parseString = (function() {
     const parser = new DOMParser();
 
     return function(xml: string) {
         return parser.parseFromString(xml, "text/xml");
-    }
+    };
 })();
 
 export class SignatureView extends HTMLDivElement { /* implements WebComponent */
@@ -51,10 +44,10 @@ export class SignatureView extends HTMLDivElement { /* implements WebComponent *
 
         this._setupArrows();
 
-        const open = document.createElement("span");
+        let open = document.createElement("span");
         open.innerText = "(";
 
-        const close = document.createElement("span");
+        let close = document.createElement("span");
         close.innerText = ")";
 
         this.appendChild(this._inner);
@@ -67,10 +60,10 @@ export class SignatureView extends HTMLDivElement { /* implements WebComponent *
         this._inner.appendChild(this._parameters);
         this._inner.appendChild(close);
 
-        const open = document.createElement("span");
+        open = document.createElement("span");
         open.innerText = " [";
 
-        const close = document.createElement("span");
+        close = document.createElement("span");
         close.innerText = "]";
 
         this._inner.appendChild(open);
@@ -118,7 +111,6 @@ export class SignatureView extends HTMLDivElement { /* implements WebComponent *
             this.updateMember(this._member);
     }
 
-    //@_d(m => _.debounce(m, 200, { leading: true, trailing: true }))
     public updateMember(member: OmniSharp.Models.SignatureHelp) {
         this._member = member;
 
@@ -131,8 +123,9 @@ export class SignatureView extends HTMLDivElement { /* implements WebComponent *
         }
 
         const signature = member.Signatures[this._selectedIndex];
+        let docs: Document;
         if (signature.Documentation)
-            const docs = parseString(signature.Documentation);
+            docs = parseString(signature.Documentation);
 
         if (this._lastIndex !== this._selectedIndex) {
             this._lastIndex = this._selectedIndex;
@@ -199,15 +192,17 @@ export class SignatureView extends HTMLDivElement { /* implements WebComponent *
 
         const currentParameter = signature.Parameters[member.ActiveParameter];
         read(() => {
+            /* tslint:disable:no-string-literal */
+            let summary: string, summaryElement: HTMLElement;
             if (signature.Documentation) {
                 const paramDocs = parseString(currentParameter.Documentation);
 
                 if (paramDocs) {
                     const s: NodeListOf<HTMLElement> = <any>paramDocs.getElementsByTagName("summary");
                     if (s.length) {
-                        const summaryElement = s[0];
+                        summaryElement = s[0];
                         if (summaryElement)
-                            const summary = _.trim(summaryElement.innerHTML);
+                            summary = _.trim(summaryElement.innerHTML);
                     }
                 }
             }
@@ -229,6 +224,7 @@ export class SignatureView extends HTMLDivElement { /* implements WebComponent *
                     this._parameterDocumentation.innerText = "";
                 }
             }
+            /* tslint:enable:no-string-literal */
         });
 
         write(() => this.style.bottom = `${this.clientHeight + this._editorLineHeight}px`);

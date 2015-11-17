@@ -1,4 +1,4 @@
-import {OmniSharp, OmniSharpAtom} from "../omnisharp.d.ts";
+import {OmniSharp, OmniSharpAtom} from "../omnisharp.ts";
 import * as _ from "lodash";
 import {Observable, ReplaySubject} from "@reactivex/rxjs";
 
@@ -15,7 +15,7 @@ export function projectViewModelFactory(omnisharpProject: OmniSharp.Models.Proje
         console.log(`Missing factory for project type ${missing}`);
     }
 
-    const results: ProjectViewModel<any>[] = []
+    const results: ProjectViewModel<any>[] = [];
     _.each(projectTypes, projectType => {
         if (projectType && projectFactories[projectType]) {
             results.push(new projectFactories[projectType](omnisharpProject[projectType], solutionPath));
@@ -38,7 +38,6 @@ const workspaceFactories: { [key: string]: (workspace: any, solutionPath: string
     },
 };
 
-const supportedWorkspaceTypes = _.keys(projectFactories);
 export function workspaceViewModelFactory(omnisharpWorkspace: OmniSharp.Models.WorkspaceInformationResponse, solutionPath: string) {
     const projects: any[] = [];
     _.forIn(omnisharpWorkspace, (item, key) => {
@@ -94,10 +93,12 @@ export abstract class ProjectViewModel<T> implements OmniSharpAtom.IProjectViewM
             this._activeFramework = this.frameworks[0];
         }
         return this._activeFramework;
-     }
+    }
     public set activeFramework(value) {
         this._activeFramework = value;
-        !this._subjectActiveFramework.isUnsubscribed && this._subjectActiveFramework.next(this._activeFramework);
+        if (!this._subjectActiveFramework.isUnsubscribed) {
+            this._subjectActiveFramework.next(this._activeFramework);
+        }
     }
 
     private _frameworks: OmniSharp.Models.DnxFramework[] = [{ FriendlyName: "All", Name: "all", ShortName: "all" }];
@@ -130,7 +131,7 @@ export abstract class ProjectViewModel<T> implements OmniSharpAtom.IProjectViewM
         this.sourceFiles = other.sourceFiles;
         this.frameworks = other.frameworks;
         this.activeFramework = this._activeFramework;
-        this.configurations = other.configurations
+        this.configurations = other.configurations;
         this.commands = other.commands;
     }
 

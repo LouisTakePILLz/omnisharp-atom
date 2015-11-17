@@ -37,7 +37,7 @@ function fetchFromGithub(source: string, prefix: string, searchPrefix: string): 
     }
 
     // If we have a cached value then the failed value is empty (no need to fall back to the server)
-    const failedValue = cache.has(source) && !!cache.get(source) ? { prefix: null, results: [] } : { prefix: null, results: null };
+    const failedValue: { prefix?: string; results: string[] } = cache.has(source) && !!cache.get(source) ? { prefix: null, results: [] } : { prefix: null, results: null };
 
     const realSource = source;
 
@@ -45,13 +45,13 @@ function fetchFromGithub(source: string, prefix: string, searchPrefix: string): 
     source = _.trim(source, "/").replace("www.", "").replace("https://", "").replace("http://", "").replace(/\/|\:/g, "-");
 
     // Get the file from github
-    const result = ajax(`https://raw.githubusercontent.com/OmniSharp/omnisharp-nuget/resources/resources/${source}/${prefix.toLowerCase() }.json`).then(res => JSON.parse(res), () => {});
+    let result = ajax(`https://raw.githubusercontent.com/OmniSharp/omnisharp-nuget/resources/resources/${source}/${prefix.toLowerCase()}.json`).then(res => JSON.parse(res), () => { /* */ });
 
     // The non key files have an object layout
     if (prefix !== "_keys") {
         const sp = searchPrefix.split(".");
         const filePrefix = sp.slice(1, sp.length - 1).join(".").toLowerCase();
-        result = result.then((value: { _keys: string[];[key: string]: string[] }) => {
+        result = result.then((value: { _keys: string[]; [key: string]: string[] }) => {
             const k = _.find(cache.get(realSource).results, x => x.toLowerCase() === prefix.toLowerCase());
             if (!filePrefix) {
                 return { prefix: k, results: value._keys };
@@ -67,7 +67,7 @@ function fetchFromGithub(source: string, prefix: string, searchPrefix: string): 
     }
 
     // Return the result
-    return Observable.fromPromise<{ prefix: string; results: string[] }>(result).catch(() => Observable.of(failedValue));
+    return Observable.fromPromise<{ prefix: string; results: string[] }>(<any>result).catch(() => Observable.of(failedValue));
 }
 
 interface IAutocompleteProviderOptions {
@@ -91,7 +91,7 @@ function makeSuggestion(item: string, path: string, replacementPrefix: string) {
     const type = "package";
 
     const r = replacementPrefix.split(".");
-    const rs = r.slice(0, r.length - 1).join(".");
+    let rs = r.slice(0, r.length - 1).join(".");
     if (rs.length) rs += ".";
     if (path.length) path += ".";
 
@@ -101,9 +101,9 @@ function makeSuggestion(item: string, path: string, replacementPrefix: string) {
         snippet: `${path}${item}`,
         type: type,
         displayText: item,
-        replacementPrefix,//: `${rs}${item}`,
+        replacementPrefix, //: `${rs}${item}`,
         className: "autocomplete-project-json",
-    }
+    };
 }
 
 function makeSuggestion2(item: string, replacementPrefix: string) {
@@ -117,23 +117,23 @@ function makeSuggestion2(item: string, replacementPrefix: string) {
         displayText: item,
         replacementPrefix,
         className: "autocomplete-project-json",
-    }
+    };
 }
 
 const nameRegex = /\/?dependencies$/;
 const versionRegex = /\/?dependencies\/([a-zA-Z0-9\._]*?)(?:\/version)?$/;
 
-const nugetName: IAutocompleteProvider = {
-    getSuggestions(options: IAutocompleteProviderOptions) {
+class NugetNameProvider implements IAutocompleteProvider {
+    public getSuggestions(options: IAutocompleteProviderOptions) {
 
         const searchTokens = options.replacementPrefix.split(".");
+        let packagePrefix: string;
         if (options.replacementPrefix.indexOf(".") > -1) {
-            const packagePrefix = options.replacementPrefix.split(".")[0];
+            packagePrefix = options.replacementPrefix.split(".")[0];
         }
-        const replacement = searchTokens.slice(0, searchTokens.length - 1).join(".");
 
         return Manager.getSolutionForEditor(options.editor)
-        // Get all sources
+            // Get all sources
             .mergeMap(z => Observable.from(z.model.packageSources))
             .mergeMap(source => {
                 // Attempt to get the source from github
@@ -147,7 +147,7 @@ const nugetName: IAutocompleteProvider = {
                                 IncludePrerelease: true,
                                 ProjectPath: solution.path,
                                 Sources: [source],
-                            })).map(z => ({ prefix: "", results: z.Packages.map(item => item.Id) }));
+                            })).map(x => ({ prefix: "", results: x.Packages.map(item => item.Id) }));
                         } else {
                             return Observable.of(z);
                         }
@@ -155,40 +155,40 @@ const nugetName: IAutocompleteProvider = {
             })
             .toArray()
             .map(z => {
-                const prefix = _.find(z, z => !!z.prefix);
+                const prefix = _.find(z, x => !!x.prefix);
                 const p = prefix ? prefix.prefix : "";
-                return _(z.map(z => z.results))
+                return _(z.map(x => x.results))
                     .flatten<string>()
                     .sortBy()
                     .unique()
-                    .map(z =>
-                        makeSuggestion(z, p, options.replacementPrefix))
+                    .map(x =>
+                        makeSuggestion(x, p, options.replacementPrefix))
                     .value();
             })
             .map(s =>
                 filter(s, searchTokens[searchTokens.length - 1], { key: "_search" }))
             .toPromise();
-    },
-    fileMatchs: ["project.json"],
-    pathMatch(path) {
+    }
+    public fileMatchs = ["project.json"];
+    public pathMatch(path: string) {
         return path && !!path.match(nameRegex);
-    },
-    dispose() { }
+    }
+    public dispose() { /* */ }
 }
 
-const nugetVersion: IAutocompleteProvider = {
-    getSuggestions(options: IAutocompleteProviderOptions) {
+class NugetVersionProvider implements IAutocompleteProvider {
+    public getSuggestions(options: IAutocompleteProviderOptions) {
         const match = options.path.match(versionRegex);
         if (!match) return Promise.resolve([]);
         const name = match[1];
 
-        const o: Observable<string[]>;
+        let o: Observable<string[]>;
 
         if (versionCache.has(name)) {
             o = versionCache.get(name);
         } else {
             o = Manager.getSolutionForEditor(options.editor)
-            // Get all sources
+                // Get all sources
                 .mergeMap(z => Observable.from(z.model.packageSources))
                 .filter(z => {
                     if (cache.has(z)) {
@@ -206,7 +206,8 @@ const nugetVersion: IAutocompleteProvider = {
                 }))
                     .mergeMap(z => Observable.from(z.Versions))
                     .toArray())
-                .shareReplay(1);
+                .publishReplay(1)
+                .refCount();
 
             versionCache.set(name, o);
         }
@@ -217,13 +218,13 @@ const nugetVersion: IAutocompleteProvider = {
             .map(s =>
                 filter(s, options.prefix, { key: "_search" }))
             .toPromise();
-    },
-    fileMatchs: ["project.json"],
-    pathMatch(path) {
+    }
+    public fileMatchs = ["project.json"];
+    public pathMatch(path: string) {
         return path && !!path.match(versionRegex);
-    },
-    dispose() { }
+    }
+    public dispose() { /* */ }
 }
 
-const providers = [nugetName, nugetVersion];
-export = providers;
+const providers = [new NugetNameProvider, new NugetVersionProvider];
+export default providers;

@@ -1,4 +1,4 @@
-import {OmniSharp, OmniSharpAtom} from "../omnisharp.d.ts";
+import {OmniSharp, OmniSharpAtom} from "../omnisharp.ts";
 import {CompositeDisposable, Disposable, IDisposable} from "../Disposable";
 import {Observable, ReplaySubject, Subject, BehaviorSubject, Scheduler} from "@reactivex/rxjs";
 import manager from "./solution-manager";

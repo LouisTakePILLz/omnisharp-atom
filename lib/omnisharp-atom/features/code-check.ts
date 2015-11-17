@@ -1,4 +1,4 @@
-import {OmniSharp, OmniSharpAtom} from "../../omnisharp.d.ts";
+import {OmniSharp, OmniSharpAtom} from "../../omnisharp.ts";
 import * as _ from "lodash";
 import {CompositeDisposable, Observable, Subject, Disposable} from "@reactivex/rxjs";
 import Omni from "../../omni-sharp-server/omni";
@@ -126,7 +126,7 @@ class CodeCheck implements OmniSharpAtom.IFeature {
 
     private filterOnlyWarningsAndErrors(quickFixes): OmniSharp.Models.DiagnosticLocation[] {
         return _.filter(quickFixes, (quickFix: OmniSharp.Models.DiagnosticLocation) => {
-            return quickFix.LogLevel != "Hidden";
+            return quickFix.LogLevel !== "Hidden";
         });
     }
 

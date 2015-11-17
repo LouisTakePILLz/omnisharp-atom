@@ -1,4 +1,4 @@
-import {OmniSharp} from "../../omnisharp.d.ts";
+import {OmniSharp} from "../../omnisharp.ts";
 /* tslint:disable:variable-name */
 const Range = require("atom").Range;
 /* tslint:enable:variable-name */
@@ -23,7 +23,7 @@ export function applyChanges(editor: Atom.TextEditor, response: { Changes: OmniS
 
         buffer.groupChangesSinceCheckpoint(checkpoint);
     } else if (response.Buffer) {
-        editor.setText(response.Buffer)
+        editor.setText(response.Buffer);
     }
 }
 
@@ -49,7 +49,7 @@ function resetPreviewTab() {
 export function applyAllChanges(changes: OmniSharp.Models.ModifiedFileResponse[]) {
     resetPreviewTab();
     return Observable.from(changes)
-        .concatMap(change => atom.workspace.open(change.FileName, undefined)
+        .concatMap(change => <Promise<Atom.TextEditor>><any>atom.workspace.open(change.FileName, undefined)
             .then(editor => {
                 resetPreviewTab();
                 applyChanges(editor, change);

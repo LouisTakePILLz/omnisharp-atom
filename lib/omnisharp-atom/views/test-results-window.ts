@@ -1,7 +1,6 @@
-import {Observable} from "@reactivex/rxjs";
-import Omni from "../../omni-sharp-server/omni";
+import {OmniSharpAtom} from "../../omnisharp.ts";
 import * as React from "react";
-const Convert = require("ansi-to-html");
+const convert = require("ansi-to-html");
 import * as _ from "lodash";
 import {ReactClientComponent} from "./react-client-component";
 import {runTests} from "../features/run-tests";
@@ -22,11 +21,11 @@ interface TestWindowProps {
 export class TestResultsWindow extends ReactClientComponent<TestWindowProps, TestWindowState> {
     public displayName = "TestResultsWindow";
 
-    private _convert;
+    private _convert: any;
 
     constructor(props?: TestWindowProps, context?: any) {
         super(props, context);
-        this._convert = new Convert();
+        this._convert = new convert();
         this.state = { testResults: props.runTests.testResults };
     }
 
@@ -34,7 +33,7 @@ export class TestResultsWindow extends ReactClientComponent<TestWindowProps, Tes
         super.componentWillMount();
 
         this.disposable.add(this.props.runTests.observe.output
-            .buffer(this.props.runTests.observe.output.throttleTime(100), () => Observable.timer(100))
+            .buffer(this.props.runTests.observe.output.throttleTime(100).delay(100))
             .map(arr => arr[0])
             .subscribe(testResults => this.setState({ testResults })));
         _.defer(_.bind(this.scrollToBottom, this));
@@ -56,11 +55,12 @@ export class TestResultsWindow extends ReactClientComponent<TestWindowProps, Tes
     }
 
     private scrollToBottom() {
-        const item = <any> React.findDOMNode(this).lastElementChild.lastElementChild;
+        const item = <any>React.findDOMNode(this).lastElementChild.lastElementChild;
         if (item) item.scrollIntoViewIfNeeded();
     }
 
     public render() {
+        /* tslint:disable:no-string-literal */
         return React.DOM.div({
             className: "omni-output-pane-view native-key-bindings " + (this.props["className"] || ""),
             tabIndex: -1
@@ -68,5 +68,6 @@ export class TestResultsWindow extends ReactClientComponent<TestWindowProps, Tes
             React.DOM.div({
                 className: "messages-container"
             }, _.map(this.state.testResults, (item, index) => this.createItem(item, index))));
+        /* tslint:enable:no-string-literal */
     }
 }

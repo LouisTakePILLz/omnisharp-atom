@@ -1,26 +1,26 @@
-import {CompositeDisposable, Disposable, Scheduler, Observable} from "@reactivex/rxjs";
+import {CompositeDisposable, IDisposable} from "../../Disposable";
+import {Observable} from "@reactivex/rxjs";
 import * as _ from "lodash";
 import Omni from "../../omni-sharp-server/omni";
-import {Solution} from "../../omni-sharp-server/solution";
 import {OmnisharpClientStatus} from "omnisharp-client";
 import {server} from "../atom/server-information";
 import {solutionInformation} from "../atom/solution-information";
-import {commandRunner, RunProcess} from "../atom/command-runner";
+import {commandRunner} from "../atom/command-runner";
 import {read, write} from "fastdom";
 
 function addClassIfNotContains(icon: HTMLElement, ...cls: string[]) {
     read(() => {
-        _.each(cls, cls => {
-            if (!icon.classList.contains(cls))
-                write(() => icon.classList.add(cls));
+        _.each(cls, clas => {
+            if (!icon.classList.contains(clas))
+                write(() => icon.classList.add(clas));
         });
     });
 }
 function removeClassIfContains(icon: HTMLElement, ...cls: string[]) {
     read(() => {
-        _.each(cls, cls => {
-            if (icon.classList.contains(cls))
-                write(() => icon.classList.remove(cls));
+        _.each(cls, clas => {
+            if (icon.classList.contains(clas))
+                write(() => icon.classList.remove(clas));
         });
     });
 }
@@ -34,7 +34,7 @@ interface StatusBarState {
     status?: OmnisharpClientStatus;
 }
 
-function updateState(self, state) {
+function updateState(self: any, state: any) {
     _.each(Omni.viewModelStatefulProperties, x => {
         if (_.has(state, x)) {
             self[x] = state[x];
@@ -50,7 +50,7 @@ export class FlameElement extends HTMLAnchorElement implements WebComponent {
         isReady?: boolean;
         isError?: boolean;
         status?: OmnisharpClientStatus;
-    }
+    };
 
     private _icon: HTMLSpanElement;
     private _outgoing: HTMLSpanElement;
@@ -137,7 +137,7 @@ export class CommandRunnerElement extends HTMLAnchorElement implements WebCompon
     public updateState(state: CommandRunnerState) {
         if (this._state !== state) {
             this._state = state;
-            if (state == CommandRunnerState.Running) {
+            if (state === CommandRunnerState.Running) {
                 addClassIfNotContains(this, "text-info");
                 removeClassIfContains(this, "text-subtle", "icon-flame-loading");
             } else {
@@ -258,7 +258,6 @@ export class ProjectCountElement extends HTMLAnchorElement implements WebCompone
 export class StatusBarElement extends HTMLElement implements WebComponent, IDisposable {
     private _state: StatusBarState;
     private _disposable: CompositeDisposable;
-    private _shadow: HTMLElement;
     private _flame: FlameElement;
     private _commandRunner: CommandRunnerElement;
     private _diagnostics: DiagnosticsElement;
@@ -293,19 +292,20 @@ export class StatusBarElement extends HTMLElement implements WebComponent, IDisp
     public attachedCallback() {
         this._disposable.add(Omni.diagnostics.subscribe(diagnostics => {
             const counts = _.countBy(diagnostics, quickFix => quickFix.LogLevel);
-
+            /* tslint:disable:no-string-literal */
             this._diagnostics.updateState({
                 errorCount: counts["Error"] || 0,
                 warningCount: counts["Warning"] || 0
-            })
+            });
+            /* tslint:enable:no-string-literal */
         }));
 
         this._disposable.add(Observable.merge(Omni.activeModel, Omni.activeModel.mergeMap(x => x.observe.state))
             .subscribe(model => {
-                    this._flame.updateState(model);
-                    updateState(this._state, model);
+                this._flame.updateState(model);
+                updateState(this._state, model);
 
-                    this._updateVisible();
+                this._updateVisible();
             }));
 
         this._disposable.add(server.observe.projects
@@ -327,12 +327,13 @@ export class StatusBarElement extends HTMLElement implements WebComponent, IDisp
 
         this._disposable.add(commandRunner.observe.processes
             .subscribe(processes => {
-                if (_.all(processes, process => process.started))
+                if (_.all(processes, process => process.started)) {
                     this._commandRunner.updateState(CommandRunnerState.Started);
-                else if (processes.length > 0)
+                } else if (processes.length > 0) {
                     this._commandRunner.updateState(CommandRunnerState.Running);
-                else
+                } else {
                     this._commandRunner.updateState(CommandRunnerState.Off);
+                }
             }));
 
         this._disposable.add(solutionInformation.observe.solutions
@@ -361,15 +362,23 @@ export class StatusBarElement extends HTMLElement implements WebComponent, IDisp
 
     private _showOnStateItems() {
         read(() => {
-            this._diagnostics.style.display === "none" && write(() => this._diagnostics.style.display = "")
-            this._projectCount.projects.style.display === "none" && write(() => this._projectCount.projects.style.display = "");
+            if (this._diagnostics.style.display === "none") {
+                write(() => this._diagnostics.style.display = "");
+            }
+            if (this._projectCount.projects.style.display === "none") {
+                write(() => this._projectCount.projects.style.display = "");
+            }
         });
     }
 
     private _hideOnStateItems() {
         read(() => {
-            this._diagnostics.style.display !== "none" && write(() => this._diagnostics.style.display = "none")
-            this._projectCount.projects.style.display !== "none" && write(() => this._projectCount.projects.style.display = "none");
+            if (this._diagnostics.style.display !== "none") {
+                write(() => this._diagnostics.style.display = "none");
+            }
+            if (this._projectCount.projects.style.display !== "none") {
+                write(() => this._projectCount.projects.style.display = "none");
+            }
         });
     }
 

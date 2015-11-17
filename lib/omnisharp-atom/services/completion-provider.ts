@@ -1,4 +1,4 @@
-import {OmniSharp} from "../../omnisharp.d.ts";
+import {OmniSharp} from "../../omnisharp.ts";
 import Omni from "../../omni-sharp-server/omni";
 import * as _ from "lodash";
 import {CompositeDisposable} from "../../Disposable";
@@ -55,7 +55,7 @@ let _useIcons: boolean;
 let _useLeftLabelColumnForSuggestions: boolean;
 
 let previous: RequestOptions;
-let results: Promise<any>;
+let results: Promise<OmniSharp.Models.AutoCompleteResponse[]>;
 
 let setupSubscriptions = () => {
     if (_initialized) return;
@@ -80,7 +80,7 @@ let setupSubscriptions = () => {
     }));
 
     _initialized = true;
-}
+};
 
 function makeSuggestion(item: OmniSharp.Models.AutoCompleteResponse) {
     let description: any, leftLabel: any, iconHTML: any, type: any;
@@ -110,7 +110,7 @@ function makeSuggestion(item: OmniSharp.Models.AutoCompleteResponse) {
         className: "autocomplete-omnisharp-atom",
         description: description,
         leftLabel: leftLabel,
-    }
+    };
 }
 
 function renderReturnType(returnType: string) {
@@ -154,7 +154,7 @@ function getSuggestions(options: RequestOptions): Promise<Suggestion[]> {
 
     if (!results) results = Omni.request(solution => solution.autocomplete(_.clone(autoCompleteOptions))).toPromise();
 
-    const p = results;
+    let p = results;
     if (search)
         p = p.then(s => filter(s, search, { key: "CompletionText" }));
 
@@ -172,14 +172,15 @@ function dispose() {
     _disposable = null;
     _initialized = false;
 }
-
+/* tslint:disable:variable-name */
 export const CompletionProvider = {
-    get selector() { return Omni.grammars.map((x: any) => `.${x.scopeName}`).join(", ") },
-    get disableForSelector() { return Omni.grammars.map((x: any) => `.${x.scopeName} .comment`).join(", ") },
+    get selector() { return Omni.grammars.map((x: any) => `.${x.scopeName}`).join(", "); },
+    get disableForSelector() { return Omni.grammars.map((x: any) => `.${x.scopeName} .comment`).join(", "); },
     inclusionPriority: 1,
     suggestionPriority: 10,
     excludeLowerPriority: true,
     getSuggestions,
     onDidInsertSuggestion,
     dispose
-}
+};
+/* tslint:enable:variable-name */

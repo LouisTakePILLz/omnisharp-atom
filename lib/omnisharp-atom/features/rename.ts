@@ -1,7 +1,7 @@
-import {OmniSharpAtom} from "../../omnisharp.d.ts";
+import {OmniSharpAtom} from "../../omnisharp.ts";
 import * as _ from "lodash";
 import {CompositeDisposable} from "../../Disposable";
-import * as RenameView from "../views/rename-view";
+import RenameView from "../views/rename-view";
 import Omni from "../../omni-sharp-server/omni";
 import {applyAllChanges} from "../services/apply-changes";
 

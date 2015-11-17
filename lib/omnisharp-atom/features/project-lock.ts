@@ -1,4 +1,4 @@
-import {OmniSharpAtom} from "../../omnisharp.d.ts";
+import {OmniSharpAtom} from "../../omnisharp.ts";
 import * as path from "path";
 import * as fs from "fs";
 import Omni from "../../omni-sharp-server/omni";
@@ -41,7 +41,7 @@ class FileMonitor implements OmniSharpAtom.IFeature {
     public activate() {
         this.disposable = new CompositeDisposable();
 
-        const projectJsonEditors = Omni.configEditors
+        /*const projectJsonEditors = Omni.configEditors
             .filter(z => _.endsWith(z.getPath(), "project.json"))
             .mergeMap(editor => {
                 const s = new Subject<boolean>();
@@ -49,7 +49,7 @@ class FileMonitor implements OmniSharpAtom.IFeature {
                     s.next(false);
                 });
                 return Observable.from(s);
-            });
+            });*/
 
         /*const pauser = Observable.merge(
             projectJsonEditors.throttleTime(10000),

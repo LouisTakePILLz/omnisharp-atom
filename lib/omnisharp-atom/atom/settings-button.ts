@@ -1,4 +1,4 @@
-import {OmniSharpAtom} from "../../omnisharp.d.ts";
+import {OmniSharpAtom} from "../../omnisharp.ts";
 import {CompositeDisposable, IDisposable} from "../../Disposable";
 import * as React from "react";
 import {dock} from "../atom/dock";

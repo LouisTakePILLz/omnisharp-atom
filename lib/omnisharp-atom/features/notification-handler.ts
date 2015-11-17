@@ -1,5 +1,5 @@
 import * as _ from "lodash";
-import {OmniSharp, OmniSharpAtom} from "../../omnisharp.d.ts";
+import {OmniSharp, OmniSharpAtom} from "../../omnisharp.ts";
 import Omni from "../../omni-sharp-server/omni";
 import {CompositeDisposable} from "../../Disposable";
 import * as path from "path";
@@ -25,7 +25,7 @@ class NotificationHandler implements OmniSharpAtom.IFeature {
 
         this.disposable.add(Omni.listener.events
             .filter(z => z.Event === "log")
-            .filter(z => z.Body.Name === "OmniSharp.Dnx.PackagesRestoreTool")
+            .filter(z => z.Body.Name === "omnisharpnx.PackagesRestoreTool")
             .filter(z => z.Body.Message.startsWith("Installing"))
             .subscribe(e => this.packageRestoreNotification.handleEvents(e)));
     }

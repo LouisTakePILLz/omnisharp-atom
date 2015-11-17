@@ -156,9 +156,11 @@ export class SingleAssignmentDisposable implements IDisposable {
     public dispose() {
         if (!this.isDisposed) {
             this.isDisposed = true;
-            var old = this._currentDisposable;
+            const old = this._currentDisposable;
             this._currentDisposable = null;
-            old && old.dispose();
+            if (old) {
+                old.dispose();
+            }
         }
     }
 }

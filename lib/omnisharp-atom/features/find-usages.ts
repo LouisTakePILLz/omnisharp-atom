@@ -1,6 +1,6 @@
-import {OmniSharp, OmniSharpAtom} from "../../omnisharp.d.ts";
+import {OmniSharp, OmniSharpAtom} from "../../omnisharp.ts";
 import {CompositeDisposable, Disposable} from "../../Disposable";
-import {Observable} from "@reactivex/rxjs";
+import {Observable, Subject} from "@reactivex/rxjs";
 import Omni from "../../omni-sharp-server/omni";
 import {dock} from "../atom/dock";
 import {FindWindow} from "../views/find-pane-view";
@@ -12,10 +12,15 @@ class FindUsages implements OmniSharpAtom.IFeature {
     private scrollTop: number = 0;
     public usages: OmniSharp.Models.DiagnosticLocation[] = [];
 
+    private _usagesSubject: Subject<boolean>;
+    private _selectedSubject: Subject<boolean>;
+
     public observe: {
         find: Observable<OmniSharp.Models.DiagnosticLocation[]>;
         open: Observable<boolean>;
         reset: Observable<boolean>;
+        usages: Observable<boolean>;
+        selected: Observable<boolean>;
     };
 
     public activate() {
@@ -32,12 +37,17 @@ class FindUsages implements OmniSharpAtom.IFeature {
             .map(z => <OmniSharp.Models.DiagnosticLocation[]>z.response.QuickFixes || [])
             .share();
 
+        const usages = this._usagesSubject = new Subject<boolean>();
+        const selected = this._selectedSubject = new Subject<boolean>();
+
         this.observe = {
             find: observable,
             // NOTE: We cannot do the same for find implementations because find implementation
             //      just goes to the item if only one comes back.
             open: Omni.listener.requests.filter(z => !z.silent && z.command === "findusages").map(() => true),
             reset: Omni.listener.requests.filter(z => !z.silent && (z.command === "findimplementations" || z.command === "findusages")).map(() => true),
+            usages: Observable.from(usages),
+            selected: Observable.from(selected),
         };
 
         this.disposable.add(Omni.addTextEditorCommand("omnisharp-atom:find-usages", () => {
@@ -75,6 +85,7 @@ class FindUsages implements OmniSharpAtom.IFeature {
 
         this.disposable.add(this.observe.find.subscribe(s => {
             this.usages = s;
+            this._usagesSubject.next(true);
         }));
 
         this.disposable.add(Observable.merge(this.observe.find.map(z => true), this.observe.open.map(z => true)).subscribe(() => {
@@ -86,6 +97,8 @@ class FindUsages implements OmniSharpAtom.IFeature {
             this.usages = [];
             this.scrollTop = 0;
             this.selectedIndex = 0;
+            this._usagesSubject.next(true);
+            this._selectedSubject.next(true);
         }));
 
 
@@ -101,8 +114,10 @@ class FindUsages implements OmniSharpAtom.IFeature {
             index = 0;
         if (index >= this.usages.length)
             index = this.usages.length - 1;
-        if (this.selectedIndex !== index)
+        if (this.selectedIndex !== index) {
             this.selectedIndex = index;
+            this._selectedSubject.next(true);
+        }
     }
 
     private ensureWindowIsCreated() {

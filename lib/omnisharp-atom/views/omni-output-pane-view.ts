@@ -1,7 +1,6 @@
-import {Disposable} from "@reactivex/rxjs";
-const Convert = require("ansi-to-html");
+import {OmniSharpAtom} from "../../omnisharp.ts";
+const convert = require("ansi-to-html");
 import * as _ from "lodash";
-import Omni from "../../omni-sharp-server/omni";
 import * as React from "react";
 import {ReactClientComponent} from "./react-client-component";
 import {server} from "../atom/server-information";
@@ -13,11 +12,11 @@ interface IOutputWindowState {
 export class OutputWindow<T> extends ReactClientComponent<T, IOutputWindowState>  {
     public displayName = "OutputWindow";
 
-    private _convert;
+    private _convert: any;
 
     constructor(props?: T, context?: any) {
         super(props, context);
-        this._convert = new Convert();
+        this._convert = new convert();
         this.state = { output: [] };
     }
 
@@ -30,7 +29,7 @@ export class OutputWindow<T> extends ReactClientComponent<T, IOutputWindowState>
     }
 
     private scrollToBottom() {
-        const item = <any> React.findDOMNode(this).lastElementChild.lastElementChild;
+        const item = <any>React.findDOMNode(this).lastElementChild.lastElementChild;
         if (item) item.scrollIntoViewIfNeeded();
     }
 
@@ -43,6 +42,7 @@ export class OutputWindow<T> extends ReactClientComponent<T, IOutputWindowState>
     }
 
     public render() {
+        /* tslint:disable:no-string-literal */
         return React.DOM.div({
             className: "omni-output-pane-view native-key-bindings " + (this.props["className"] || ""),
             tabIndex: -1
@@ -50,5 +50,6 @@ export class OutputWindow<T> extends ReactClientComponent<T, IOutputWindowState>
             React.DOM.div({
                 className: "messages-container"
             }, _.map(this.state.output, (item, index) => this.createItem(item, index))));
+        /* tslint:enable:no-string-literal */
     }
 }

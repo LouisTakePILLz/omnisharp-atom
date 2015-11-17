@@ -1,11 +1,11 @@
 // Inspiration : https://atom.io/packages/ide-haskell
 // and https://atom.io/packages/ide-flow
 // https://atom.io/packages/atom-typescript
-import {OmniSharp, OmniSharpAtom} from "../../omnisharp.d.ts";
+import {OmniSharp, OmniSharpAtom} from "../../omnisharp.ts";
 import {CompositeDisposable, Disposable, IDisposable} from "../../Disposable";
 import { Observable, Subscription} from "@reactivex/rxjs";
 import Omni from "../../omni-sharp-server/omni";
-import * as TooltipView from "../views/tooltip-view";
+import TooltipView from "../views/tooltip-view";
 import * as $ from "jquery";
 const escape = require("escape-html");
 

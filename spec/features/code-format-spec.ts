@@ -1,4 +1,4 @@
-import {OmniSharp, OmniSharpAtom} from "../omnisharp.d.ts";
+import {OmniSharp, OmniSharpAtom} from "../omnisharp.ts";
 import Omni from "../../lib/omni-sharp-server/omni";
 import {CompositeDisposable} from "@reactivex/rxjs";
 import {setupFeature, restoreBuffers, openEditor} from "../test-helpers";

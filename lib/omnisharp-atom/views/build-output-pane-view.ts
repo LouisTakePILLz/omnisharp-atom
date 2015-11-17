@@ -1,6 +1,6 @@
-const Convert = require("ansi-to-html")
+import {OmniSharpAtom} from "../../omnisharp.ts";
+const convert = require("ansi-to-html");
 import * as _ from "lodash";
-import Omni from "../../omni-sharp-server/omni";
 import * as React from "react";
 import {ReactClientComponent} from "./react-client-component";
 import {server} from "../atom/server-information";
@@ -12,11 +12,11 @@ interface IBuildOutputWindowState {
 export class BuildOutputWindow<T> extends ReactClientComponent<T, IBuildOutputWindowState> {
     public displayName = "BuildOutputWindow";
 
-    private _convert;
+    private _convert: any;
 
     constructor(props?: T, context?: any) {
         super(props, context);
-        this._convert = new Convert();
+        this._convert = new convert();
         this.state = { output: [] };
     }
 
@@ -39,6 +39,7 @@ export class BuildOutputWindow<T> extends ReactClientComponent<T, IBuildOutputWi
     }
 
     public render() {
+        /* tslint:disable:no-string-literal */
         return React.DOM.div({
             className: "build-output-pane-view native-key-bindings " + (this.props["className"] || ""),
             tabIndex: -1
@@ -46,5 +47,6 @@ export class BuildOutputWindow<T> extends ReactClientComponent<T, IBuildOutputWi
             React.DOM.div({
                 className: "messages-container"
             }, _.map(this.state.output, item => this.createItem(item))));
+        /* tslint:enable:no-string-literal */
     }
 }
