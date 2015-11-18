@@ -412,4 +412,4 @@ class OmniSharpAtom {
     };
 }
 
-export const self = new OmniSharpAtom;
+module.exports = new OmniSharpAtom;

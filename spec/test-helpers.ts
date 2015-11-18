@@ -4,9 +4,6 @@ import {Observable} from "@reactivex/rxjs";
 import {CompositeDisposable, Disposable} from "../lib/Disposable";
 import {DriverState} from "omnisharp-client";
 
-if ((<any>jasmine.getEnv()).defaultTimeoutInterval < 30000) (<any>jasmine.getEnv()).defaultTimeoutInterval = 30000;
-if ((<any>jasmine.getEnv()).defaultTimeoutInterval === 60000) (<any>jasmine.getEnv()).defaultTimeoutInterval = 60000 * 3;
-
 //SolutionManager.solutionObserver.errors.subscribe(error => console.error(JSON.stringify(error)));
 SolutionManager.solutionObserver.events.subscribe(event => console.info(`server event: ${JSON.stringify(event) }`));
 SolutionManager.solutionObserver.requests.subscribe(r => console.info(`request: ${JSON.stringify(r) }`));
@@ -14,7 +11,7 @@ SolutionManager.solutionObserver.responses.subscribe(r => console.info(`response
 
 export function setupFeature(features: string[], unitTestMode = true) {
     let cd: CompositeDisposable;
-    beforeEach(function() {
+    beforeEach(function(done) {
         cd = new CompositeDisposable();
         SolutionManager._unitTestMode_ = unitTestMode;
         SolutionManager._kick_in_the_pants_ = true;
@@ -22,10 +19,10 @@ export function setupFeature(features: string[], unitTestMode = true) {
         atom.config.set("omnisharp-atom:feature-white-list", true);
         atom.config.set("omnisharp-atom:feature-list", features);
 
-        waitsForPromise(() => atom.packages.activatePackage("language-csharp")
+        atom.packages.activatePackage("language-csharp")
             .then(() => atom.packages.activatePackage("omnisharp-atom"))
             .then((pack: Atom.Package) => pack.mainModule._activated.toPromise())
-        );
+            .then(done);
     });
 
     afterEach(() => {
@@ -90,6 +87,5 @@ export function openEditor(file: string) {
         .mergeMap(({editor, solution}) => solution.state.startWith(solution.currentState)
         .map(state => ({ editor, solution, state: state })))
         .filter(z => z.state === DriverState.Connected)
-        .take(1)
-        .toPromise();
+        .take(1);
 }

@@ -509,7 +509,6 @@ class SolutionInstanceManager {
         }).mergeMap(candidates => this.__candidateFinder(candidates));
     }
 
-//  private __candidateFinder(candidates: Candidate[]): Promise<Candidate[]> {
     private __candidateFinder(candidates: Candidate[]): Promise<Candidate[]> {
         const slns = _.filter(candidates, x => _.endsWith(x.path, ".sln"));
         return new Promise(resolve => {
@@ -585,7 +584,7 @@ class SolutionInstanceManager {
         // Look for the closest match first.
         mappedLocations.reverse();
 
-        const intersect: string = (<any>_<string[]>(mappedLocations)).intersection(validSolutionPaths).first();
+        const intersect: string = (<any>_.chain<string[]>(mappedLocations)).intersection(validSolutionPaths).first();
         if (intersect) {
             return intersect;
         }

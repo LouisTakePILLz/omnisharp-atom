@@ -90,7 +90,7 @@ class CodeCheck implements OmniSharpAtom.IFeature {
             codeCheck: this
         }));
 
-        const started = 0, finished = 0;
+        let started = 0, finished = 0;
         this.disposable.add(Observable.combineLatest(
             Omni.listener.packageRestoreStarted.map(x => started++),
             Omni.listener.packageRestoreFinished.map(x => finished++),

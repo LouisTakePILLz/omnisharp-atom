@@ -1,4 +1,6 @@
+import {Observable} from "@reactivex/rxjs";
 /// <reference path="../tsd.d.ts" />
+import {expect} from "chai";
 import {Omni} from "../../lib/omni-sharp-server/omni";
 import {setupFeature, openEditor} from "../test-helpers";
 import {codeLens, Lens} from "../../lib/omnisharp-atom/features/code-lens";
@@ -8,44 +10,30 @@ describe("Code Lens", () => {
 
     (<any>Lens.prototype)._isVisible = () => true;
 
-    let e: Atom.TextEditor;
-    it("should add code lens\"", () => {
-        const p1 = openEditor("simple/code-lens/CodeLens.cs")
-            .then((a) => {
-                e = a.editor;
-                return a;
-            });
+    it("should add code lens", (done) => {
+        Observable.zip(
+            openEditor("simple/code-lens/CodeLens.cs"),
+            Omni.listener.currentfilemembersasflat
+                .debounceTime(1000))
+            .take(1)
+            .subscribe((ctx) => {
+                const editor = ctx[0].editor;
+                const map: WeakMap<Atom.TextEditor, Set<Lens>> = (<any>codeLens).decorations;
+                const lenses = map.get(editor);
 
-        const p2 = Omni.listener.currentfilemembersasflat.debounceTime(1000).take(1).toPromise();
-
-        waitsForPromise(() => Promise.all<any>([p1, p2]));
-
-        runs(function() {
-            const map: WeakMap<Atom.TextEditor, Set<Lens>> = (<any>codeLens).decorations;
-            const lenses = map.get(e);
-
-            expect(lenses.size).toBe(15);
-            //expect(_.filter(lenses, x => x.loaded).length).toBe(9);
-        });
+                expect(lenses.size).to.be.eql(15);
+            }, null, done);
     });
 
-    it("should handle editor switching", () => {
-        const p1 = openEditor("simple/code-lens/CodeLens.cs")
-            .then(() => Omni.listener.currentfilemembersasflat.debounceTime(1000).take(1).toPromise())
-            .then(() => openEditor("simple/code-lens/CodeLens2.cs"))
-            .then(() => Omni.listener.currentfilemembersasflat.debounceTime(1000).take(1).toPromise())
-            .then(() => openEditor("simple/code-lens/CodeLens.cs"))
-            .then((a: any) => {
-                e = a.editor;
-                return a;
-            })
-            .then(() => Omni.listener.currentfilemembersasflat.debounceTime(1000).take(1).toPromise());
-
-        waitsForPromise(() => p1);
-
-        runs(function() {
-            // Sometimes consties as the server starts up
-            expect(e.getDecorations().length).toBeGreaterThan(9);
-        });
+    it("should handle editor switching", (done) => {
+        openEditor("simple/code-lens/CodeLens.cs")
+            .mergeMap(() => Omni.listener.currentfilemembersasflat.debounceTime(1000).take(1))
+            .mergeMap(() => openEditor("simple/code-lens/CodeLens2.cs"))
+            .mergeMap(() => Omni.listener.currentfilemembersasflat.debounceTime(1000).take(1))
+            .mergeMap(() => openEditor("simple/code-lens/CodeLens.cs"))
+            .mergeMap((ctx) => Omni.listener.currentfilemembersasflat.debounceTime(1000).take(1).map(() => ctx))
+            .subscribe(({editor}) => {
+                expect(editor.getDecorations().length).to.be.greaterThan(9);
+            }, null, done);
     });
 });

@@ -16,30 +16,32 @@ var ts = require('ntypescript');
 
 var metadata = {
     lib: ['lib/**/*.ts', '!lib/**/*.d.ts'],
-    spec: ['spec/**/*.ts'],
-};
-
-var babelMetadata = {
-    lib: ['lib/**/*.js'],
-    spec: ['spec/**/*.js']
+    spec: ['spec/**/*.ts', '!spec/**/*.d.ts'],
 };
 
 // Simply take TS code and strip anything not javascript
 // Does not do any compile time checking.
 function tsTranspile() {
-    return through.obj(function (file, enc, cb) {
+    return through.obj(function(file, enc, cb) {
         if (file.isNull()) {
             cb(null, file);
             return;
         }
 
-        var res = ts.transpile(file.contents.toString(), { module: ts.ModuleKind.ES6 });
+        try {
+            var res = ts.transpile(file.contents.toString(), {
+                module: ts.ModuleKind.ES6,
+                target: ts.ScriptTarget.ES6
+            }, file.path);
 
-        file.contents = new Buffer(res);
-        file.path = gutil.replaceExtension(file.path, '.js');
-        gutil.log(gutil.colors.cyan('Writing ') + gutil.colors.green(_.trim(file.path.replace(__dirname, ''), path.sep)));
+            file.contents = new Buffer(res);
+            file.path = gutil.replaceExtension(file.path, '.js');
+            gutil.log(gutil.colors.cyan('Writing ') + gutil.colors.green(_.trim(file.path.replace(__dirname, ''), path.sep)));
 
-        this.push(file);
+            this.push(file);
+        } catch (e) {
+            console.log('failed', file.path, e);
+        }
 
         cb();
     });
@@ -48,20 +50,20 @@ function tsTranspile() {
 function tsTranspiler(source, dest) {
     return source
         .pipe(tslint())
-        .pipe(tslint.report('prose'))
         .pipe(tsTranspile())
         .pipe(babel())
-        .pipe(gulp.dest(dest));
+        .pipe(gulp.dest(dest))
+        //.pipe(tslint.report('prose'));
 }
 
-gulp.task('typescript', ['clean'], function() {
+gulp.task('typescript', ['compile-info', 'clean'], function() {
     var lib = tsTranspiler(gulp.src(metadata.lib), './lib');
     var spec = tsTranspiler(gulp.src(metadata.spec), './spec');
 
     return merge(lib, spec);
 });
 
-gulp.task('compile-info', ['typescript'], function() {
+gulp.task('compile-info', [], function() {
     var args = ['-p', path.resolve(__dirname.toString())];
     var compile = new Promise(function(resolve, reject) {
         var tsc = spawn(path.resolve(__dirname + '/node_modules/.bin/ntsc' + (win32 && '.cmd' || '')), args);
@@ -75,10 +77,12 @@ gulp.task('compile-info', ['typescript'], function() {
     return compile;
 });
 
-gulp.task('clean', ['clean:lib', 'clean:spec']);
+gulp.task('clean', ['compile-info', 'clean:lib', 'clean:spec']);
 
 gulp.task('clean:lib', function(done) {
-    del(metadata.lib.map(function(z) { return gutil.replaceExtension(z, '.js'); }), function(err, paths) {
+    del(metadata.lib.map(function(z) {
+        return gutil.replaceExtension(z, '.js');
+    }), function(err, paths) {
         _.each(paths, function(path) {
             gutil.log(gutil.colors.red('Deleted ') + gutil.colors.magenta(path.replace(__dirname, '').substring(1)));
         });
@@ -87,7 +91,9 @@ gulp.task('clean:lib', function(done) {
 });
 
 gulp.task('clean:spec', function(done) {
-    del(metadata.spec.map(function(z) { return gutil.replaceExtension(z, '.js'); }), function(err, paths) {
+    del(metadata.spec.map(function(z) {
+        return gutil.replaceExtension(z, '.js');
+    }), function(err, paths) {
         _.each(paths, function(path) {
             gutil.log(gutil.colors.red('Deleted ') + gutil.colors.magenta(path.replace(__dirname, '').substring(1)));
         });
@@ -100,10 +106,14 @@ gulp.task('watch', function() {
     //  you need to install manually but don't save it as it causes CI issues.
     var watch = require('gulp-watch');
     // Auto restart watch when gulpfile is changed.
-    var p = spawn(gulpPath, ['file-watch'], {stdio: 'inherit'});
+    var p = spawn(gulpPath, ['file-watch'], {
+        stdio: 'inherit'
+    });
     return watch('gulpfile.js', function() {
         p.kill();
-        p = spawn(gulpPath, ['file-watch'], {stdio: 'inherit'});
+        p = spawn(gulpPath, ['file-watch'], {
+            stdio: 'inherit'
+        });
     });
 });
 
