@@ -1,3 +1,4 @@
+/// <reference path="tsd.d.ts" />
 import Omni from "../lib/omni-sharp-server/omni";
 import SolutionManager from "../lib/omni-sharp-server/solution-manager";
 import {DriverState} from "omnisharp-client";

@@ -1,3 +1,4 @@
+/// <reference path="../tsd.d.ts" />
 import Omni from "../../lib/omni-sharp-server/omni";
 import {Observable, CompositeDisposable} from "@reactivex/rxjs";
 import {setupFeature, restoreBuffers, openEditor} from "../test-helpers";

@@ -1,3 +1,4 @@
+/// <reference path="tsd.d.ts" />
 import SolutionManager from "../lib/omni-sharp-server/solution-manager";
 import {Solution} from "../lib/omni-sharp-server/solution";
 import {Observable} from "@reactivex/rxjs";

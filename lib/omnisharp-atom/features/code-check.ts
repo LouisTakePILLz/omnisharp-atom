@@ -1,6 +1,7 @@
 import {OmniSharp, OmniSharpAtom} from "../../omnisharp.ts";
 import * as _ from "lodash";
-import {CompositeDisposable, Observable, Subject, Disposable} from "@reactivex/rxjs";
+import {CompositeDisposable, Disposable} from "../../Disposable";
+import {Observable, Subject} from "@reactivex/rxjs";
 import Omni from "../../omni-sharp-server/omni";
 import {dock} from "../atom/dock";
 import {CodeCheckOutputWindow} from "../views/codecheck-output-pane-view";
@@ -62,9 +63,9 @@ class CodeCheck implements OmniSharpAtom.IFeature {
 
             cd.add(o.subscribe());
 
-            cd.add(editor.getBuffer().onDidSave(() => !subject.isDisposed && subject.next(null)));
-            cd.add(editor.getBuffer().onDidReload(() => !subject.isDisposed && subject.next(null)));
-            cd.add(editor.getBuffer().onDidStopChanging(() => !subject.isDisposed && subject.next(null)));
+            cd.add(editor.getBuffer().onDidSave(() => !subject.isUnsubscribed && subject.next(null)));
+            cd.add(editor.getBuffer().onDidReload(() => !subject.isUnsubscribed && subject.next(null)));
+            cd.add(editor.getBuffer().onDidStopChanging(() => !subject.isUnsubscribed && subject.next(null)));
             cd.add(Disposable.create(() => this._editorSubjects.delete(editor)));
         }));
 

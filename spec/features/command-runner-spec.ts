@@ -1,3 +1,4 @@
+/// <reference path="../tsd.d.ts" />
 import {Solution} from "../../lib/omni-sharp-server/solution";
 import Omni from "../../lib/omni-sharp-server/omni";
 import {Observable, CompositeDisposable} from "@reactivex/rxjs";

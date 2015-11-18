@@ -4,7 +4,7 @@ import {Observable, Subject} from "@reactivex/rxjs";
 import * as path from "path";
 import * as fs from "fs";
 import {fromNodeCallback} from "../fromCallback";
-import {OmniSharpAtom} from "../omnisharp.ts";
+import {OmniSharpAtom as OmniAtom} from "../omnisharp.ts";
 
 // TODO: Remove these at some point to stream line startup.
 import Omni from "../omni-sharp-server/omni";
@@ -94,7 +94,7 @@ class OmniSharpAtom {
                     const feature = loadFeature(z.file);
 
                     const features: { key: string, activate: () => () => void }[] = [];
-                    _.each(feature, (value: OmniSharpAtom.IFeature, key: string) => {
+                    _.each(feature, (value: OmniAtom.IFeature, key: string) => {
                         if (!_.isFunction(value)) {
                             if (!value.required) {
                                 this.config[key] = {
@@ -147,7 +147,7 @@ class OmniSharpAtom {
             .do(x => x());
     }
 
-    public activateFeature(whiteListUndefined: any, key: string, value: OmniSharpAtom.IFeature) {
+    public activateFeature(whiteListUndefined: any, key: string, value: OmniAtom.IFeature) {
         let result: () => void = null;
         let firstRun = true;
 

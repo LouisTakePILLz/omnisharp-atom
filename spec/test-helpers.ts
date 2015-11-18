@@ -1,3 +1,4 @@
+/// <reference path="tsd.d.ts" />
 import SolutionManager from "../lib/omni-sharp-server/solution-manager";
 import {CompositeDisposable, Disposable, Observable} from "@reactivex/rxjs";
 import {DriverState} from "omnisharp-client";

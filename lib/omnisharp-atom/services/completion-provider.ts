@@ -2,7 +2,6 @@ import {OmniSharp} from "../../omnisharp.ts";
 import Omni from "../../omni-sharp-server/omni";
 import * as _ from "lodash";
 import {CompositeDisposable} from "../../Disposable";
-import * as Promise from "bluebird";
 const filter = require("fuzzaldrin").filter;
 
 interface RequestOptions {

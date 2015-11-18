@@ -31,6 +31,8 @@
   "filesGlob": [
     "./lib/**/*.ts",
     "!./lib/**/*.d.ts",
+    "./spec/**/*.ts",
+    "!./spec/**/*.d.ts",
     "./tsd.d.ts",
     "./lib/omnisharp.ts",
     "./lib/typings.d.ts"
