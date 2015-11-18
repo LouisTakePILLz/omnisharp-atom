@@ -1,7 +1,7 @@
 import {OmniSharpAtom} from "../../omnisharp.ts";
 import {CompositeDisposable} from "../../Disposable";
 import {Observable, Scheduler} from "@reactivex/rxjs";
-import Omni from "../../omni-sharp-server/omni";
+import {Omni} from "../../omni-sharp-server/omni";
 import {exists} from "fs";
 import {fromCallback} from "../../fromCallback";
 const oexists = fromCallback(exists);

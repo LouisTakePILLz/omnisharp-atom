@@ -5,7 +5,7 @@ export interface SelectListViewOptions<T> {
     confirmed: (item: T) => any;
 }
 
-export default function <T>(options: SelectListViewOptions<T>, editor: Atom.TextEditor): CodeActionsView<T> {
+export function codeActionsView<T>(options: SelectListViewOptions<T>, editor: Atom.TextEditor): CodeActionsView<T> {
     let codeActionView = (<any>editor).codeActionView;
     if (!codeActionView) {
         (<any>editor).codeActionView = codeActionView = new CodeActionsView<T>(options, editor);

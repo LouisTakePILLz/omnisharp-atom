@@ -1,6 +1,6 @@
 import {OmniSharpAtom} from "../../omnisharp.ts";
 import {CompositeDisposable} from "../../Disposable";
-import Omni from "../../omni-sharp-server/omni";
+import {Omni} from "../../omni-sharp-server/omni";
 import {readFileSync} from "fs";
 
 class Menu implements OmniSharpAtom.IFeature {

@@ -2,7 +2,7 @@ import {OmniSharp, OmniSharpAtom} from "../../omnisharp.ts";
 import * as _ from "lodash";
 import {CompositeDisposable, Disposable, IDisposable} from "../../Disposable";
 import {Observable, Subject, Scheduler} from "@reactivex/rxjs";
-import Omni from "../../omni-sharp-server/omni";
+import {Omni} from "../../omni-sharp-server/omni";
 import {read, write} from "fastdom";
 
 interface IDecoration {

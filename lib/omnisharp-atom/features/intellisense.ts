@@ -1,7 +1,7 @@
 import {OmniSharpAtom} from "../../omnisharp.ts";
 import {CompositeDisposable} from "../../Disposable";
 import {delay} from "lodash";
-import Omni from "../../omni-sharp-server/omni";
+import {Omni} from "../../omni-sharp-server/omni";
 
 class Intellisense implements OmniSharpAtom.IFeature {
     private disposable: CompositeDisposable;
@@ -42,4 +42,4 @@ class Intellisense implements OmniSharpAtom.IFeature {
     public title = "Intellisense";
     public description = "Augments some of the issues with Atoms autocomplete-plus package";
 }
-export const intellisense = new Intellisense
+export const intellisense = new Intellisense;

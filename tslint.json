@@ -50,6 +50,6 @@
     "typedef-whitespace": [true],
     "use-strict": [false],
     "variable-name": [true, "allow-leading-underscore", "allow-trailing-underscore"],
-    "whitespace": [true, "check-branch", "check-decl", "check-operator", "check-module", "check-separator", "check-type"]
+    "whitespace": [false, "check-branch", "check-decl", "check-operator", "check-module", "check-separator", "check-type"]
   }
 }

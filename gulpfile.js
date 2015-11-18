@@ -24,13 +24,44 @@ var babelMetadata = {
     spec: ['spec/**/*.js']
 };
 
-gulp.task('lint', ['clean'], function() {
-    return gulp.src(metadata.lib.concat(metadata.spec))
-        //.pipe(tslint())
-        //.pipe(tslint.report('prose'));
+// Simply take TS code and strip anything not javascript
+// Does not do any compile time checking.
+function tsTranspile() {
+    return through.obj(function (file, enc, cb) {
+        if (file.isNull()) {
+            cb(null, file);
+            return;
+        }
+
+        var res = ts.transpile(file.contents.toString(), { module: ts.ModuleKind.ES6 });
+
+        file.contents = new Buffer(res);
+        file.path = gutil.replaceExtension(file.path, '.js');
+        gutil.log(gutil.colors.cyan('Writing ') + gutil.colors.green(_.trim(file.path.replace(__dirname, ''), path.sep)));
+
+        this.push(file);
+
+        cb();
+    });
+}
+
+function tsTranspiler(source, dest) {
+    return source
+        .pipe(tslint())
+        .pipe(tslint.report('prose'))
+        .pipe(tsTranspile())
+        .pipe(babel())
+        .pipe(gulp.dest(dest));
+}
+
+gulp.task('typescript', ['clean'], function() {
+    var lib = tsTranspiler(gulp.src(metadata.lib), './lib');
+    var spec = tsTranspiler(gulp.src(metadata.spec), './spec');
+
+    return merge(lib, spec);
 });
 
-gulp.task('typescript', ['lint', 'clean'], function() {
+gulp.task('compile-info', ['typescript'], function() {
     var args = ['-p', path.resolve(__dirname.toString())];
     var compile = new Promise(function(resolve, reject) {
         var tsc = spawn(path.resolve(__dirname + '/node_modules/.bin/ntsc' + (win32 && '.cmd' || '')), args);
@@ -42,20 +73,6 @@ gulp.task('typescript', ['lint', 'clean'], function() {
     });
 
     return compile;
-});
-
-gulp.task('babel', ['babel:lib', 'babel:spec']);
-
-gulp.task('babel:lib', ['typescript'], function() {
-    return gulp.src(babelMetadata.lib)
-        .pipe(babel())
-        .pipe(gulp.dest('lib'));
-});
-
-gulp.task('babel:spec', ['typescript'], function() {
-    return gulp.src(babelMetadata.spec)
-        .pipe(babel())
-        .pipe(gulp.dest('spec'));
 });
 
 gulp.task('clean', ['clean:lib', 'clean:spec']);
@@ -110,8 +127,8 @@ gulp.task('file-watch', function() {
     return merge(lib, spec);
 });
 
-gulp.task('npm-postinstall', ['typescript', 'babel']);
-gulp.task('npm-prepublish', ['typescript', 'babel']);
+gulp.task('npm-postinstall', ['typescript', 'compile-info']);
+gulp.task('npm-prepublish', ['typescript', 'compile-info']);
 
 // The default task (called when you run `gulp` from CLI)
-gulp.task('default', ['typescript', 'babel']);
+gulp.task('default', ['typescript', 'compile-info']);

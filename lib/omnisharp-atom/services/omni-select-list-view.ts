@@ -2,7 +2,7 @@ import {OmniSharp} from "../../omnisharp.ts";
 import * as SpacePen from "atom-space-pen-views";
 import * as $ from "jquery";
 
-class OmniSelectListView extends SpacePen.SelectListView {
+export class OmniSelectListView extends SpacePen.SelectListView {
     public panel: Atom.Panel;
     private items: any[] = [];
     private list: any;
@@ -58,5 +58,3 @@ class OmniSelectListView extends SpacePen.SelectListView {
         this.panel.destroy();
     }
 }
-
-export default OmniSelectListView;

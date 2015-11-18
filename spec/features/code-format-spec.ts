@@ -1,8 +1,8 @@
 /// <reference path="../tsd.d.ts" />
-import {OmniSharp, OmniSharpAtom} from "../omnisharp.ts";
-import Omni from "../../lib/omni-sharp-server/omni";
-import {CompositeDisposable} from "@reactivex/rxjs";
-import {setupFeature, restoreBuffers, openEditor} from "../test-helpers";
+import {OmniSharp} from "../../lib/omnisharp.ts";
+import {Omni} from "../../lib/omni-sharp-server/omni";
+import {CompositeDisposable} from "../../lib/Disposable";
+import {setupFeature, restoreBuffers} from "../test-helpers";
 import {codeFormat} from "../../lib/omnisharp-atom/features/code-format";
 
 describe("Code Format", () => {
@@ -26,11 +26,11 @@ describe("Code Format", () => {
         const d = restoreBuffers();
         const disposable = new CompositeDisposable();
         disposable.add(d);
-        const e: Atom.TextEditor;
-        const request: OmniSharp.Models.FormatRangeRequest;
-        const response: OmniSharp.Models.FormatRangeResponse;
+        let e: Atom.TextEditor;
+        let request: OmniSharp.Models.FormatRangeRequest;
+        let response: OmniSharp.Models.FormatRangeResponse;
 
-        const responsePromise = Omni.listener.formatRange
+        Omni.listener.formatRange
             .do(r => request = r.request)
             .do(r => response = r.response)
             .take(1)
@@ -42,8 +42,7 @@ describe("Code Format", () => {
                 codeFormat.format();
 
                 const observable = Omni.listener.formatRange
-                    .do(r =>
-                        request = r.request)
+                    .do(r => request = r.request)
                     .take(1)
                     .delay(400);
 

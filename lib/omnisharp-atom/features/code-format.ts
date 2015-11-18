@@ -1,6 +1,6 @@
 import {OmniSharp, OmniSharpAtom} from "../../omnisharp.ts";
 import {CompositeDisposable} from "../../Disposable";
-import Omni from "../../omni-sharp-server/omni";
+import {Omni} from "../../omni-sharp-server/omni";
 import {applyChanges} from "../services/apply-changes";
 
 class CodeFormat implements OmniSharpAtom.IFeature {

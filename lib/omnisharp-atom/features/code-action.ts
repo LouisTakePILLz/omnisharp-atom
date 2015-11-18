@@ -2,10 +2,10 @@ import {OmniSharp, OmniSharpAtom} from "../../omnisharp.ts";
 import * as _ from "lodash";
 import {CompositeDisposable, IDisposable} from "../../Disposable";
 import {Subject, Observable, Scheduler} from "@reactivex/rxjs";
-import Omni from "../../omni-sharp-server/omni";
+import {Omni} from "../../omni-sharp-server/omni";
 import * as SpacePen from "atom-space-pen-views";
 import {applyAllChanges} from "../services/apply-changes";
-import codeActionsView from "../views/code-actions-view";
+import {codeActionsView} from "../views/code-actions-view";
 
 class CodeAction implements OmniSharpAtom.IFeature {
     private disposable: CompositeDisposable;

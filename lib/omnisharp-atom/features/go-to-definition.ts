@@ -2,7 +2,7 @@ import {OmniSharp, OmniSharpAtom} from "../../omnisharp.ts";
 import * as _ from "lodash";
 import {CompositeDisposable} from "../../Disposable";
 import {Observable, Subscription} from "@reactivex/rxjs";
-import Omni from "../../omni-sharp-server/omni";
+import {Omni} from "../../omni-sharp-server/omni";
 import * as $ from "jquery";
 /* tslint:disable:variable-name */
 const Range: typeof TextBuffer.Range = require("atom").Range;

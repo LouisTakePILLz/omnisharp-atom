@@ -1,7 +1,7 @@
 import {OmniSharp, OmniSharpAtom} from "../../omnisharp.ts";
 import {CompositeDisposable, Disposable, IDisposable} from "../../Disposable";
 import {Observable, Subject} from "@reactivex/rxjs";
-import Omni from "../../omni-sharp-server/omni";
+import {Omni} from "../../omni-sharp-server/omni";
 import * as _ from "lodash";
 import {SignatureView} from "../views/signature-help-view";
 

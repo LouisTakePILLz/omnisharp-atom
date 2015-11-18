@@ -1,6 +1,6 @@
 import {OmniSharpAtom} from "../../omnisharp.ts";
 import {CompositeDisposable} from "../../Disposable";
-import Omni from "../../omni-sharp-server/omni";
+import {Omni} from "../../omni-sharp-server/omni";
 
 class PackageRestore implements OmniSharpAtom.IFeature {
     private disposable: CompositeDisposable;

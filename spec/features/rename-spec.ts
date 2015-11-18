@@ -1,10 +1,11 @@
 /// <reference path="../tsd.d.ts" />
-import Omni from "../../lib/omni-sharp-server/omni";
-import {Observable, CompositeDisposable} from "@reactivex/rxjs";
-import {setupFeature, restoreBuffers, openEditor} from "../test-helpers";
-import * as RenameView from "../../lib/omnisharp-atom/views/rename-view";
+import {CompositeDisposable} from "../../lib/Disposable";
+import {setupFeature, openEditor} from "../test-helpers";
+import {RenameView} from "../../lib/omnisharp-atom/views/rename-view";
 const a = require("atom");
+/* tslint:disable:variable-name */
 const Range: typeof TextBuffer.Range = a.Range;
+/* tslint:enable:variable-name */
 
 describe("Rename", () => {
     setupFeature(["features/rename"]);

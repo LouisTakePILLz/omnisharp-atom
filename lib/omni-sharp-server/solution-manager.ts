@@ -9,7 +9,7 @@ import {DriverState, findCandidates, Candidate} from "omnisharp-client";
 import {GenericSelectListView} from "../omnisharp-atom/views/generic-list-view";
 
 let openSelectList: GenericSelectListView;
-class SolutionManager {
+class SolutionInstanceManager {
     /* tslint:disable:variable-name */
     public _unitTestMode_ = false;
     public _kick_in_the_pants_ = false;
@@ -638,5 +638,7 @@ function fromIterator<T>(iterator: IterableIterator<T>) {
     return items;
 }
 
-const instance = new SolutionManager();
-export default instance;
+
+/* tslint:disable:variable-name */
+export const SolutionManager = new SolutionInstanceManager;
+/* tslint:enable:variable-name */

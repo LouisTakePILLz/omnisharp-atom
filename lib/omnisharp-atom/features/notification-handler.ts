@@ -1,6 +1,6 @@
 import * as _ from "lodash";
 import {OmniSharp, OmniSharpAtom} from "../../omnisharp.ts";
-import Omni from "../../omni-sharp-server/omni";
+import {Omni} from "../../omni-sharp-server/omni";
 import {CompositeDisposable} from "../../Disposable";
 import * as path from "path";
 import * as $ from "jquery";

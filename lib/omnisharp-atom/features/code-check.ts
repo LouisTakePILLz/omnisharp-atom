@@ -2,7 +2,7 @@ import {OmniSharp, OmniSharpAtom} from "../../omnisharp.ts";
 import * as _ from "lodash";
 import {CompositeDisposable, Disposable} from "../../Disposable";
 import {Observable, Subject} from "@reactivex/rxjs";
-import Omni from "../../omni-sharp-server/omni";
+import {Omni} from "../../omni-sharp-server/omni";
 import {dock} from "../atom/dock";
 import {CodeCheckOutputWindow} from "../views/codecheck-output-pane-view";
 import {reloadWorkspace} from "./reload-workspace";

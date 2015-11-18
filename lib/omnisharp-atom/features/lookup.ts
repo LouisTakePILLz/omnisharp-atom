@@ -4,8 +4,8 @@
 import {OmniSharp, OmniSharpAtom} from "../../omnisharp.ts";
 import {CompositeDisposable, Disposable, IDisposable} from "../../Disposable";
 import { Observable, Subscription} from "@reactivex/rxjs";
-import Omni from "../../omni-sharp-server/omni";
-import TooltipView from "../views/tooltip-view";
+import {Omni} from "../../omni-sharp-server/omni";
+import {TooltipView} from "../views/tooltip-view";
 import * as $ from "jquery";
 const escape = require("escape-html");
 

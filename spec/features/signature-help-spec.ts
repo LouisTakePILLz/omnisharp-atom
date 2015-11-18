@@ -1,8 +1,6 @@
 /// <reference path="../tsd.d.ts" />
-import {Solution} from "../../lib/omni-sharp-server/solution";
-import Omni from "../../lib/omni-sharp-server/omni";
-import {Observable, CompositeDisposable} from "@reactivex/rxjs";
-import {setupFeature, restoreBuffers, openEditor} from "../test-helpers";
+import {CompositeDisposable} from "../../lib/Disposable";
+import {setupFeature} from "../test-helpers";
 
 describe("Signature Help", () => {
     setupFeature(["features/signature-help"]);

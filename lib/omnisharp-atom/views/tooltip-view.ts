@@ -8,7 +8,7 @@ interface Rect {
     bottom: number;
 }
 
-class TooltipView extends spacePen.View {
+export class TooltipView extends spacePen.View {
 
     public static content() {
         return this.div({ class: "atom-typescript-tooltip tooltip" }, () => {
@@ -54,4 +54,3 @@ class TooltipView extends spacePen.View {
         this.css({ left, top, right });
     }
 }
-export default TooltipView;

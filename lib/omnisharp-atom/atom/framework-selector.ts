@@ -1,7 +1,7 @@
 import {OmniSharp, OmniSharpAtom} from "../../omnisharp.ts";
 import {CompositeDisposable, Disposable} from "../../Disposable";
 import {ProjectViewModel} from "../../omni-sharp-server/project-view-model";
-import Omni from "../../omni-sharp-server/omni";
+import {Omni} from "../../omni-sharp-server/omni";
 import {FrameworkSelectorComponent} from "../views/framework-selector-view";
 import * as React from "react";
 

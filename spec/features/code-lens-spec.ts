@@ -1,16 +1,14 @@
 /// <reference path="../tsd.d.ts" />
-import Omni from "../../lib/omni-sharp-server/omni";
-import {Observable, CompositeDisposable} from "@reactivex/rxjs";
-import {setupFeature, restoreBuffers, openEditor} from "../test-helpers";
+import {Omni} from "../../lib/omni-sharp-server/omni";
+import {setupFeature, openEditor} from "../test-helpers";
 import {codeLens, Lens} from "../../lib/omnisharp-atom/features/code-lens";
-import * as _ from "lodash";
 
 describe("Code Lens", () => {
     setupFeature(["features/code-lens"]);
 
     (<any>Lens.prototype)._isVisible = () => true;
 
-    const e: Atom.TextEditor;
+    let e: Atom.TextEditor;
     it("should add code lens\"", () => {
         const p1 = openEditor("simple/code-lens/CodeLens.cs")
             .then((a) => {
@@ -20,7 +18,7 @@ describe("Code Lens", () => {
 
         const p2 = Omni.listener.currentfilemembersasflat.debounceTime(1000).take(1).toPromise();
 
-        waitsForPromise(() => Promise.all([p1, p2]));
+        waitsForPromise(() => Promise.all<any>([p1, p2]));
 
         runs(function() {
             const map: WeakMap<Atom.TextEditor, Set<Lens>> = (<any>codeLens).decorations;

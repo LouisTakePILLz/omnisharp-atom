@@ -7,7 +7,7 @@ import {fromNodeCallback} from "../fromCallback";
 import {OmniSharpAtom as OmniAtom} from "../omnisharp.ts";
 
 // TODO: Remove these at some point to stream line startup.
-import Omni from "../omni-sharp-server/omni";
+import {Omni} from "../omni-sharp-server/omni";
 const win32 = process.platform === "win32";
 
 class OmniSharpAtom {
@@ -412,5 +412,4 @@ class OmniSharpAtom {
     };
 }
 
-const instance = new OmniSharpAtom;
-export default instance;
+export const self = new OmniSharpAtom;

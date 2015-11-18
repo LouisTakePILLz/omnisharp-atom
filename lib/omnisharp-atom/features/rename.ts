@@ -1,8 +1,8 @@
 import {OmniSharpAtom} from "../../omnisharp.ts";
 import * as _ from "lodash";
 import {CompositeDisposable} from "../../Disposable";
-import RenameView from "../views/rename-view";
-import Omni from "../../omni-sharp-server/omni";
+import {RenameView} from "../views/rename-view";
+import {Omni} from "../../omni-sharp-server/omni";
 import {applyAllChanges} from "../services/apply-changes";
 
 class Rename implements OmniSharpAtom.IFeature {

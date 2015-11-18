@@ -2,7 +2,7 @@ import {OmniSharpAtom} from "../../omnisharp.ts";
 import {Solution} from "../../omni-sharp-server/solution";
 import {CompositeDisposable, Disposable} from "../../Disposable";
 import {Observable, Subject} from "@reactivex/rxjs";
-import Omni from "../../omni-sharp-server/omni";
+import {Omni} from "../../omni-sharp-server/omni";
 import {ProjectViewModel} from "../../omni-sharp-server/project-view-model";
 import {any, each, contains, pull} from "lodash";
 import {spawn} from "child_process";

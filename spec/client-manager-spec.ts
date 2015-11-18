@@ -1,17 +1,15 @@
 /// <reference path="tsd.d.ts" />
-import SolutionManager from "../lib/omni-sharp-server/solution-manager";
+import {SolutionManager} from "../lib/omni-sharp-server/solution-manager";
 import {Solution} from "../lib/omni-sharp-server/solution";
-import {Observable} from "@reactivex/rxjs";
 import {setupFeature, openEditor} from "./test-helpers";
 import {DriverState} from "omnisharp-client";
 import {GenericSelectListView} from "../lib/omnisharp-atom/views/generic-list-view";
-import {delay} from "lodash";
 
 describe("OmniSharp Atom", () => {
     setupFeature([], false);
 
     it("Works with single cs files", function() {
-        const c: Solution;
+        let c: Solution;
         waitsForPromise(() =>
             openEditor("single-cs/class.cs").then(({solution}) => c = solution));
 
@@ -21,7 +19,7 @@ describe("OmniSharp Atom", () => {
     });
 
     it("shows a list of solutions when it detects many sln files", function() {
-        const p: Promise<any>;
+        let p: Promise<any>;
         waitsForPromise(() =>
             atom.workspace.open("two-solution/class.cs").then(editor => { p = SolutionManager.getSolutionForEditor(editor).toPromise(); }));
 

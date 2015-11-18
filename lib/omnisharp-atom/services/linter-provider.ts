@@ -1,5 +1,5 @@
 import {OmniSharp} from "../../omnisharp.ts";
-import Omni from "../../omni-sharp-server/omni";
+import {Omni} from "../../omni-sharp-server/omni";
 /*  tslint:disable:variable-name */
 const Range = require("atom").Range;
 /*  tslint:enable:variable-name */

@@ -1,6 +1,7 @@
 /// <reference path="tsd.d.ts" />
-import SolutionManager from "../lib/omni-sharp-server/solution-manager";
-import {CompositeDisposable, Disposable, Observable} from "@reactivex/rxjs";
+import {SolutionManager} from "../lib/omni-sharp-server/solution-manager";
+import {Observable} from "@reactivex/rxjs";
+import {CompositeDisposable, Disposable} from "../lib/Disposable";
 import {DriverState} from "omnisharp-client";
 
 if ((<any>jasmine.getEnv()).defaultTimeoutInterval < 30000) (<any>jasmine.getEnv()).defaultTimeoutInterval = 30000;
@@ -12,7 +13,7 @@ SolutionManager.solutionObserver.requests.subscribe(r => console.info(`request: 
 SolutionManager.solutionObserver.responses.subscribe(r => console.info(`response: ${JSON.stringify(r) }`));
 
 export function setupFeature(features: string[], unitTestMode = true) {
-    const cd: CompositeDisposable;
+    let cd: CompositeDisposable;
     beforeEach(function() {
         cd = new CompositeDisposable();
         SolutionManager._unitTestMode_ = unitTestMode;
@@ -38,7 +39,8 @@ export function setupFeature(features: string[], unitTestMode = true) {
 
 export function restoreBuffers() {
     return Disposable.empty;
-    const disposable = new CompositeDisposable();
+    /*
+    let disposable = new CompositeDisposable();
     const buffers = new Map<string, string>();
 
     if (SolutionManager._unitTestMode_) {
@@ -77,15 +79,16 @@ export function restoreBuffers() {
                 iteratee = iterator.next();
             }
         }
-    });
+    });*/
 }
 
 export function openEditor(file: string) {
-    return Observable.fromPromise(atom.workspace.open(file))
+    return Observable.fromPromise<Atom.TextEditor>(<any>atom.workspace.open(file))
         .mergeMap(editor =>
             SolutionManager.getSolutionForEditor(editor).map(solution => ({ editor, solution }))
         )
-        .mergeMap(({editor, solution}) => solution.state.startWith(solution.currentState).map(state=> ({ editor, solution, state: state })))
+        .mergeMap(({editor, solution}) => solution.state.startWith(solution.currentState)
+        .map(state => ({ editor, solution, state: state })))
         .filter(z => z.state === DriverState.Connected)
         .take(1)
         .toPromise();

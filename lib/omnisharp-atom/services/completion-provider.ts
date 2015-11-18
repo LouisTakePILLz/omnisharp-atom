@@ -1,5 +1,5 @@
 import {OmniSharp} from "../../omnisharp.ts";
-import Omni from "../../omni-sharp-server/omni";
+import {Omni} from "../../omni-sharp-server/omni";
 import * as _ from "lodash";
 import {CompositeDisposable} from "../../Disposable";
 const filter = require("fuzzaldrin").filter;

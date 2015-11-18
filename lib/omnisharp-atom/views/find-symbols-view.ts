@@ -1,7 +1,7 @@
-import OmniSelectListView from "../services/omni-select-list-view";
-import Omni from "../../omni-sharp-server/omni";
+import {OmniSelectListView} from "../services/omni-select-list-view";
+import {Omni} from "../../omni-sharp-server/omni";
 
-class FindSymbolsView extends OmniSelectListView {
+export class FindSymbolsView extends OmniSelectListView {
 
     constructor() {
         super("Find Symbols");
@@ -40,5 +40,3 @@ class FindSymbolsView extends OmniSelectListView {
         return 1;
     }
 }
-
-export default FindSymbolsView;

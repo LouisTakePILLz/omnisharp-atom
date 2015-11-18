@@ -1,7 +1,7 @@
 import {OmniSharp} from "../../omnisharp.ts";
 import * as _ from "lodash";
 import * as path from "path";
-import Omni from "../../omni-sharp-server/omni";
+import {Omni} from "../../omni-sharp-server/omni";
 import * as React from "react";
 import * as $ from "jquery";
 import {ReactClientComponent} from "./react-client-component";

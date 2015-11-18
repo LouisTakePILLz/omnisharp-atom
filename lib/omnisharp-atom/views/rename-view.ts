@@ -1,8 +1,8 @@
 import * as spacePenViews from "atom-space-pen-views";
 
-import Omni from "../../omni-sharp-server/omni";
+import {Omni} from "../../omni-sharp-server/omni";
 
-class RenameView extends spacePenViews.View {
+export class RenameView extends spacePenViews.View {
     public static content() {
         return this.div({
             "class": "rename overlay from-top"
@@ -43,4 +43,3 @@ class RenameView extends spacePenViews.View {
         return this.detach();
     }
 }
-export default RenameView;

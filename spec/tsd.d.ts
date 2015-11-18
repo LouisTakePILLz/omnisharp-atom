@@ -1,19 +1,17 @@
 /// <reference path="../tsd.d.ts" />
 /// <reference path="../typings/jasmine/jasmine.d.ts" />
 
-declare function waitsForPromise<T>(callback: () => Promise<T>);
-declare function waitsForPromise<T>(callback: () => Q.Promise<T>);
-declare function waitsForPromise<T>(callback: () => Promise<T>);
+declare function waitsForPromise<T>(callback: () => Promise<T>): void;
+declare function waitsForPromise<T>(callback: () => Q.Promise<T>): void;
+declare function waitsForPromise<T>(callback: () => Promise<T>): void;
 
-declare module  jasmine {
-    function attachToDOM(element:any);
-
+declare module jasmine {
     interface Matchers {
-        toExist();
+        toExist(): void;
     }
 }
 declare module chai {
     interface Assert {
-        isAbove(valueToCheck: number, valueToBeAbove: number, message?: string);
+        isAbove(valueToCheck: number, valueToBeAbove: number, message?: string): void;
     }
 }

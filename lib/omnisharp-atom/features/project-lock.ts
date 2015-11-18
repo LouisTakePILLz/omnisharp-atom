@@ -1,7 +1,7 @@
 import {OmniSharpAtom} from "../../omnisharp.ts";
 import * as path from "path";
 import * as fs from "fs";
-import Omni from "../../omni-sharp-server/omni";
+import {Omni} from "../../omni-sharp-server/omni";
 import * as _ from "lodash";
 import {IDisposable, CompositeDisposable} from "../../Disposable";
 import {Observable, Subject} from "@reactivex/rxjs";

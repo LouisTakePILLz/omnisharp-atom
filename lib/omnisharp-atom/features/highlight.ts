@@ -1,5 +1,5 @@
 import {OmniSharp, OmniSharpAtom} from "../../omnisharp.ts";
-import Omni from "../../omni-sharp-server/omni";
+import {Omni} from "../../omni-sharp-server/omni";
 import {CompositeDisposable, Disposable} from "../../Disposable";
 import {each, extend, has, contains, any, range, remove, pull, find, chain, unique, set, findIndex, all, isEqual, min, debounce, sortBy} from "lodash";
 import {Observable, Subject, ReplaySubject} from "@reactivex/rxjs";

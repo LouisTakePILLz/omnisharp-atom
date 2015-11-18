@@ -1,6 +1,5 @@
 /// <reference path="tsd.d.ts" />
-import Omni from "../lib/omni-sharp-server/omni";
-import SolutionManager from "../lib/omni-sharp-server/solution-manager";
+import {SolutionManager} from "../lib/omni-sharp-server/solution-manager";
 import {DriverState} from "omnisharp-client";
 import {Observable} from "@reactivex/rxjs";
 import {setupFeature} from "./test-helpers";
@@ -11,13 +10,10 @@ describe("OmniSharp Atom", () => {
     describe("when the package is activated", () => {
         it("connect", () => {
             waitsForPromise(() =>
-                Observable.fromPromise(atom.workspace.open("simple/code-lens/CodeLens.cs"))
-                    .mergeMap(editor =>
-                        SolutionManager.getSolutionForEditor(editor))
-                    .mergeMap(x =>
-                        x.state.startWith(x.currentState))
-                    .filter(z =>
-                        z === DriverState.Connected)
+                Observable.fromPromise<Atom.TextEditor>(<any>atom.workspace.open("simple/code-lens/CodeLens.cs"))
+                    .mergeMap(editor => SolutionManager.getSolutionForEditor(editor))
+                    .mergeMap(x => x.state.startWith(x.currentState))
+                    .filter(z => z === DriverState.Connected)
                     .take(1)
                     .toPromise());
 
@@ -33,7 +29,7 @@ describe("OmniSharp Atom", () => {
                         atom.workspace.open("simple/code-lens/CodeLens.cs"),
                         atom.workspace.open("simple2/project.json")
                     ])
-                    )
+                )
                     .mergeMap(x => Observable.from(x))
                     .mergeMap(editor =>
                         SolutionManager.getSolutionForEditor(editor))

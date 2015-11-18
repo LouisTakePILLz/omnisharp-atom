@@ -4,7 +4,7 @@ import {Observable} from "@reactivex/rxjs";
 import * as _ from "lodash";
 import {SolutionStatusCard, ICardProps} from "../views/solution-status-view";
 import {ViewModel} from "../../omni-sharp-server/view-model";
-import manager from "../../omni-sharp-server/solution-manager";
+import {SolutionManager} from "../../omni-sharp-server/solution-manager";
 import {DriverState} from "omnisharp-client";
 import * as React from "react";
 
@@ -27,7 +27,7 @@ class SolutionInformation implements OmniSharpAtom.IFeature {
         const solutions = this.setupSolutions();
         this.observe = { solutions };
 
-        this.disposable.add(manager.activeSolution.subscribe(model => this.selectedIndex = _.findIndex(manager.activeSolutions, { index: model.index })));
+        this.disposable.add(SolutionManager.activeSolution.subscribe(model => this.selectedIndex = _.findIndex(SolutionManager.activeSolutions, { index: model.index })));
 
         this.disposable.add(atom.commands.add("atom-workspace", "omnisharp-atom:next-solution-status", () => {
             this.updateSelectedItem(this.selectedIndex + 1);
@@ -46,15 +46,15 @@ class SolutionInformation implements OmniSharpAtom.IFeature {
         }));
 
         this.disposable.add(atom.commands.add("atom-workspace", "omnisharp-atom:stop-server", () => {
-            manager.activeSolutions[this.selectedIndex].dispose();
+            SolutionManager.activeSolutions[this.selectedIndex].dispose();
         }));
 
         this.disposable.add(atom.commands.add("atom-workspace", "omnisharp-atom:start-server", () => {
-            manager.activeSolutions[this.selectedIndex].connect();
+            SolutionManager.activeSolutions[this.selectedIndex].connect();
         }));
 
         this.disposable.add(atom.commands.add("atom-workspace", "omnisharp-atom:restart-server", () => {
-            const solution = manager.activeSolutions[this.selectedIndex];
+            const solution = SolutionManager.activeSolutions[this.selectedIndex];
             solution.state
                 .filter(z => z === DriverState.Disconnected)
                 .take(1)
@@ -83,7 +83,7 @@ class SolutionInformation implements OmniSharpAtom.IFeature {
     }
 
     private setupSolutions() {
-        const solutions = manager.observeActiveSolutions
+        const solutions = SolutionManager.observeActiveSolutions
             .map(x => x.map(z => z.model))
             .share();
 
