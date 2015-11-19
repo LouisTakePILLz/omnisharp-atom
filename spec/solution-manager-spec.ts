@@ -17,7 +17,10 @@ describe("Solution Manager", () => {
 
     it("shows a list of solutions when it detects many sln files", function(done) {
         atom.workspace.open("two-solution/class.cs")
-            .then(editor => SolutionManager.getSolutionForEditor(editor).toPromise())
+            .then(editor => {
+                checkPanel();
+                return SolutionManager.getSolutionForEditor(editor).toPromise();
+            })
             .then(() => done());
 
         function checkPanel() {
@@ -31,6 +34,5 @@ describe("Solution Manager", () => {
                 setTimeout(checkPanel, 100);
             }
         }
-        checkPanel();
     });
 });

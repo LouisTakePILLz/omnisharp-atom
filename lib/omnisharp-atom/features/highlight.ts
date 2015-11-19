@@ -203,8 +203,10 @@ class Highlight implements OmniSharpAtom.IFeature {
             issueRequest.next(true);
         }));
 
-        disposable.add(Omni.whenEditorConnected(editor).delay(1000).subscribe(null, null, () => {
-            issueRequest.next(true);
+        disposable.add(Omni.whenEditorConnected(editor).delay(1000).subscribe({
+            complete: () => {
+                issueRequest.next(true);
+            }
         }));
     }
 

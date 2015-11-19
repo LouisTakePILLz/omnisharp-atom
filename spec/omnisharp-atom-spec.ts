@@ -33,10 +33,12 @@ describe("OmniSharp Atom", () => {
                 .mergeMap(x => x.state.startWith(x.currentState))
                 .filter(z => z === DriverState.Connected)
                 .take(2)
-                .subscribe(null, null, () => {
-                    expect(SolutionManager.connected).to.be.true;
-                    expect(SolutionManager.activeSolutions.length).to.be.eql(2);
-                    done();
+                .subscribe({
+                    complete: () => {
+                        expect(SolutionManager.connected).to.be.true;
+                        expect(SolutionManager.activeSolutions.length).to.be.eql(2);
+                        done();
+                    }
                 });
         });
     });

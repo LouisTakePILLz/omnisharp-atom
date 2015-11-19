@@ -55,13 +55,15 @@ class OmniSharpAtom {
                 // Only activate features once we have a solution!
                 this.disposable.add(startingObservable
                     .mergeMap(() => this.loadFeatures(this.getFeatures("features")))
-                    .subscribe(null, null, () => {
-                        this.disposable.add(atom.workspace.observeTextEditors((editor: Atom.TextEditor) => {
-                            this.detectAutoToggleGrammar(editor);
-                        }));
+                    .subscribe({
+                        complete: () => {
+                            this.disposable.add(atom.workspace.observeTextEditors((editor: Atom.TextEditor) => {
+                                this.detectAutoToggleGrammar(editor);
+                            }));
 
-                        this._activated.next(true);
-                        this._activated.complete();
+                            this._activated.next(true);
+                            this._activated.complete();
+                        }
                     }));
 
             });
@@ -137,11 +139,13 @@ class OmniSharpAtom {
             .map(f => f.activate())
             .filter(x => !!x)
             .toArray()
-            .do(null, null, () => {
-                (<any>atom.config).setSchema("omnisharp-atom", {
-                    type: "object",
-                    properties: this.config
-                });
+            .do({
+                complete: () => {
+                    (<any>atom.config).setSchema("omnisharp-atom", {
+                        type: "object",
+                        properties: this.config
+                    });
+                }
             })
             .concatMap(x => x)
             .do(x => x());

@@ -1,7 +1,7 @@
 import * as _ from "lodash";
 import * as path from "path";
 import {Disposable, CompositeDisposable, RefCountDisposable, IDisposable} from "../Disposable";
-import {Observable, BehaviorSubject, Scheduler, Subject, Subscriber} from "@reactivex/rxjs";
+import {Observable, BehaviorSubject, Scheduler, Subject, ReplaySubject} from "@reactivex/rxjs";
 import {Solution} from "./solution";
 import {AtomProjectTracker} from "./atom-projects";
 import {SolutionObserver, SolutionAggregateObserver} from "./composite-solution";
@@ -9,7 +9,9 @@ import {DriverState, findCandidates, Candidate} from "omnisharp-client";
 import {GenericSelectListView} from "../omnisharp-atom/views/generic-list-view";
 
 let openSelectList: GenericSelectListView;
-class SolutionInstanceManager {
+class SolutionInstanceManager implements IDisposable {
+    // These extensions only support server per folder, unlike normal cs files.
+    private static _specialCaseExtensions = [".csx", /*".cake"*/];
     /* tslint:disable:variable-name */
     public _unitTestMode_ = false;
     public _kick_in_the_pants_ = false;
@@ -29,10 +31,7 @@ class SolutionInstanceManager {
     private _activated = false;
     private _nextIndex = 0;
     private _activeSearch: Promise<any>;
-
-    // These extensions only support server per folder, unlike normal cs files.
-    private _specialCaseExtensions = [".csx", /*".cake"*/];
-    public get __specialCaseExtensions() { return this._specialCaseExtensions; }
+    public get __specialCaseExtensions() { return SolutionInstanceManager._specialCaseExtensions; }
 
     private _activeSolutions: Solution[] = [];
     public get activeSolutions() {
@@ -97,6 +96,8 @@ class SolutionInstanceManager {
         this._activated = true;
         this.activatedSubject.next(true);
         this._disposable.add(this._solutionDisposable);
+
+        this._activeSolutionsSubject.next([]);
     }
 
     public connect() {
@@ -107,7 +108,7 @@ class SolutionInstanceManager {
         this._solutions.forEach(solution => solution.dispose());
     }
 
-    public deactivate() {
+    public dispose() {
         this._activated = false;
         this._disposable.dispose();
         this.disconnect();
@@ -115,6 +116,13 @@ class SolutionInstanceManager {
         this._solutions.clear();
         this._solutionProjects.clear();
         this._findSolutionCache.clear();
+        this._candidateFinderCache.clear();
+
+        this._temporarySolutions = new WeakMap<Solution, RefCountDisposable>();
+        this._disposableSolutionMap = new WeakMap<Solution, IDisposable>();
+
+        this._activeSolutions.forEach(x => x.dispose());
+        this._activeSolutions = [];
     }
 
     public get connected() {
@@ -199,7 +207,7 @@ class SolutionInstanceManager {
                 this._temporarySolutions.delete(solution);
             }
 
-            if (!this._activeSolution.isUnsubscribed && this._activeSolution.value === solution) {
+            if (this._activeSolution.value === solution) {
                 this._activeSolution.next(this._activeSolutions.length ? this._activeSolutions[0] : null);
             }
         }));
@@ -228,36 +236,31 @@ class SolutionInstanceManager {
         return result;
     }
 
-    private _addSolutionSubscriptions(solution: Solution, cd: CompositeDisposable) {
-        return Observable.create((subscriber: Subscriber<Solution>) => {
-            const errorResult = solution.state
-                .filter(z => z === DriverState.Error)
-                .delay(100)
-                .take(1);
+    private _addSolutionSubscriptions(solution: Solution, cd: CompositeDisposable): Observable<Solution> {
+        const subject = new ReplaySubject<Solution>();
 
-            cd.add(errorResult.subscribe(() => subscriber.complete())); // If this solution errors move on to the next
+        const errorResult = solution.state
+            .filter(z => z === DriverState.Error)
+            .take(1);
 
-            cd.add(solution.model.observe.projectAdded.subscribe(project => this._solutionProjects.set(project.path, solution)));
-            cd.add(solution.model.observe.projectRemoved.subscribe(project => this._solutionProjects.delete(project.path)));
+        cd.add(solution.model.observe.projectAdded.subscribe(project => this._solutionProjects.set(project.path, solution)));
+        cd.add(solution.model.observe.projectRemoved.subscribe(project => this._solutionProjects.delete(project.path)));
 
-            // Wait for the projects to return from the solution
-            cd.add(solution.model.observe.projects
-                .debounceTime(100)
-                .take(1)
-                .map(() => solution)
-                .timeout(15000, Scheduler.nextTick) // Wait 30 seconds for the project to load.
-                .subscribe(() => {
-                    // We loaded successfully return the solution
-                    subscriber.next(solution);
-                    subscriber.complete();
-                }, () => {
-                    // Move along.
-                    subscriber.complete();
-                }));
+        // Wait for the projects to return from the solution
+        cd.add(solution.model.observe.projects
+            .debounceTime(100)
+            .take(1)
+            .map(() => solution)
+            .timeout(15000, Scheduler.nextTick) // Wait 30 seconds for the project to load.
+            .subscribe({
+                next() { subject.next(solution); },
+                error() { subject.complete(); },
+                complete() { subject.complete(); }
+            }));
 
-            return subscriber;
+        cd.add(errorResult.subscribe(() => subject.complete())); // If this solution errors move on to the next
 
-        });
+        return subject;
     }
 
     private _removeSolution(candidate: string) {
@@ -450,7 +453,7 @@ class SolutionInstanceManager {
 
         const subject = new Subject<[string, Solution, boolean]>();
         this._findSolutionCache.set(location, subject);
-        subject.do(null, null, () => this._findSolutionCache.delete(location));
+        subject.do({ complete: () => this._findSolutionCache.delete(location) });
 
         const project = this._intersectAtomProjectPath(directory);
         const cb = (candidates: { path: string; isProject: boolean }[]) => {
@@ -473,27 +476,29 @@ class SolutionInstanceManager {
 
             const newCandidates = _.difference(candidates.map(z => z.path), fromIterator(this._solutions.keys())).map(z => _.find(candidates, { path: z }));
             this._activeSearch.then(() => addCandidatesInOrder(newCandidates, (candidate, isProject) => this._addSolution(candidate, isProject, { temporary: !project }))
-                .subscribe(null, null, () => {
-                    if (!isFolderPerFile) {
-                        // Attempt to see if this file is part a solution
-                        const r = this._isPartOfAnyActiveSolution(location, (intersect, solution) => {
-                            subject.next([solution.path, solution, false]); // The boolean means this solution is temporary.
-                            subject.complete();
-                            return;
-                        });
-                        if (r) return;
-                    }
-
-                    const intersect = this._intersectPath(location) || this._intersectAtomProjectPath(location);
-                    if (intersect) {
-                        if (this._solutions.has(intersect)) {
-                            subject.next([intersect, this._solutions.get(intersect), !project]); // The boolean means this solution is temporary.
+                .subscribe({
+                    complete: () => {
+                        if (!isFolderPerFile) {
+                            // Attempt to see if this file is part a solution
+                            const r = this._isPartOfAnyActiveSolution(location, (intersect, solution) => {
+                                subject.next([solution.path, solution, false]); // The boolean means this solution is temporary.
+                                subject.complete();
+                                return;
+                            });
+                            if (r) return;
                         }
-                    } else {
-                        subject.error("Could not find a solution for location " + location);
-                        return;
+
+                        const intersect = this._intersectPath(location) || this._intersectAtomProjectPath(location);
+                        if (intersect) {
+                            if (this._solutions.has(intersect)) {
+                                subject.next([intersect, this._solutions.get(intersect), !project]); // The boolean means this solution is temporary.
+                            }
+                        } else {
+                            subject.error("Could not find a solution for location " + location);
+                            return;
+                        }
+                        subject.complete();
                     }
-                    subject.complete();
                 }));
         };
 
@@ -519,7 +524,7 @@ class SolutionInstanceManager {
                 const listView = new GenericSelectListView("",
                     slns.map(x => ({ displayName: x.path, name: x.path })),
                     (result: any) => {
-                        items.unshift(result);
+                        items.unshift(_.find(candidates, x => x.path === result));
                         _.each(candidates, x => this._candidateFinderCache.add(x.path));
 
                         openSelectList = null;
@@ -584,7 +589,7 @@ class SolutionInstanceManager {
         // Look for the closest match first.
         mappedLocations.reverse();
 
-        const intersect: string = (<any>_.chain<string[]>(mappedLocations)).intersection(validSolutionPaths).first();
+        const intersect: string = (<any>_.chain<string[]>(mappedLocations)).intersection(validSolutionPaths).value()[0];
         if (intersect) {
             return intersect;
         }
@@ -601,29 +606,32 @@ class SolutionInstanceManager {
 }
 
 function addCandidatesInOrder(candidates: { path: string; isProject: boolean; }[], cb: (candidate: string, isProject: boolean) => Observable<Solution>) {
-    return Observable.create((subscriber: Subscriber<typeof candidates>) => {
-        if (!candidates.length) {
-            subscriber.next(candidates);
-            subscriber.complete();
-            return;
-        }
+    const subject = new ReplaySubject(1);
 
-        const cds = candidates.slice();
-        const candidate = cds.shift();
-        const handleCandidate = (candid: { path: string; isProject: boolean; }) => {
-            cb(candid.path, candid.isProject)
-                .do(null, null, () => {
+    if (!candidates.length) {
+        subject.next(candidates);
+        subject.complete();
+        return subject;
+    }
+
+    const cds = candidates.slice();
+    const candidate = cds.shift();
+    const handleCandidate = (candid: { path: string; isProject: boolean; }) => {
+        cb(candid.path, candid.isProject)
+            .do({
+                complete: () => {
                     if (cds.length) {
                         candid = cds.shift();
                         handleCandidate(candid);
                     } else {
-                        subscriber.next(candidates);
-                        subscriber.next();
+                        subject.next(candidates);
+                        subject.complete();
                     }
-                });
-        };
-        handleCandidate(candidate);
-    });
+                }
+            });
+    };
+    handleCandidate(candidate);
+    return subject;
 }
 
 function fromIterator<T>(iterator: IterableIterator<T>) {
@@ -639,5 +647,5 @@ function fromIterator<T>(iterator: IterableIterator<T>) {
 
 
 /* tslint:disable:variable-name */
-export const SolutionManager = new SolutionInstanceManager;
+export let SolutionManager = new SolutionInstanceManager;
 /* tslint:enable:variable-name */

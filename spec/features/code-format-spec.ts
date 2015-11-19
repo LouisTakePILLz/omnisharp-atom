@@ -8,7 +8,7 @@ import {codeFormat} from "../../lib/omnisharp-atom/features/code-format";
 describe("Code Format", () => {
     setupFeature(["features/code-format"]);
 
-    it("adds commands", (done) => {
+    it("adds commands", () => {
         const disposable = new CompositeDisposable();
 
         const commands: any = atom.commands;
@@ -18,7 +18,6 @@ describe("Code Format", () => {
         expect(commands.registeredCommands["omnisharp-atom:code-format-on-curly-brace"]).to.be.true;
 
         disposable.dispose();
-        done();
     });
 
     it("formats code", (done) => {

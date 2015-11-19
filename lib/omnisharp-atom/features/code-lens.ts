@@ -139,13 +139,15 @@ class CodeLens implements OmniSharpAtom.IFeature {
 
                 return lens.updateVisible();
             })
-            .do(null, null, () => {
-                // Remove all old/missing decorations
-                decorations.forEach(lens => {
-                    if (lens && !updated.has(lens)) {
-                        lens.dispose();
-                    }
-                });
+            .do({
+                complete: () => {
+                    // Remove all old/missing decorations
+                    decorations.forEach(lens => {
+                        if (lens && !updated.has(lens)) {
+                            lens.dispose();
+                        }
+                    });
+                }
             });
     }
 

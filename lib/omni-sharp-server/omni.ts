@@ -67,6 +67,7 @@ class OmniManager implements IDisposable {
     public activate() {
         this.disposable = new CompositeDisposable;
         SolutionManager.activate(this._activeEditorOrConfigEditor);
+        this.disposable.add(SolutionManager);
 
         // we are only off if all our solutions are disconncted or erroed.
         this.disposable.add(SolutionManager.solutionAggregateObserver.state.subscribe(z => this._isOff = _.all(z, x => x.value === DriverState.Disconnected || x.value === DriverState.Error)));
@@ -157,9 +158,7 @@ class OmniManager implements IDisposable {
     }
 
     public dispose() {
-        if (SolutionManager._unitTestMode_) return;
         this.disposable.dispose();
-        SolutionManager.deactivate();
     }
 
     public connect() { SolutionManager.connect(); }
