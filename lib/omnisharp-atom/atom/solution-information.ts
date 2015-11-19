@@ -4,11 +4,12 @@ import {Observable} from "@reactivex/rxjs";
 import * as _ from "lodash";
 import {SolutionStatusCard, ICardProps} from "../views/solution-status-view";
 import {ViewModel} from "../../omni-sharp-server/view-model";
-import {SolutionManager} from "../../omni-sharp-server/solution-manager";
+import {OmniManager} from "../../omni-sharp-server/omni";
 import {DriverState} from "omnisharp-client";
 import * as React from "react";
 
 class SolutionInformation implements OmniSharpAtom.IFeature {
+    private omni: OmniManager;
     private disposable: CompositeDisposable;
     public selectedIndex: number = 0;
     private card: SolutionStatusCard<ICardProps>;
@@ -21,13 +22,14 @@ class SolutionInformation implements OmniSharpAtom.IFeature {
 
     public solutions: ViewModel[] = [];
 
-    public activate() {
+    public activate(omni: OmniManager) {
         this.disposable = new CompositeDisposable();
+        this.omni = omni;
 
         const solutions = this.setupSolutions();
         this.observe = { solutions };
 
-        this.disposable.add(SolutionManager.activeSolution.subscribe(model => this.selectedIndex = _.findIndex(SolutionManager.activeSolutions, { index: model.index })));
+        this.disposable.add(omni.solutionManager.activeSolution.subscribe(model => this.selectedIndex = _.findIndex(omni.solutionManager.activeSolutions, { index: model.index })));
 
         this.disposable.add(atom.commands.add("atom-workspace", "omnisharp-atom:next-solution-status", () => {
             this.updateSelectedItem(this.selectedIndex + 1);
@@ -46,15 +48,15 @@ class SolutionInformation implements OmniSharpAtom.IFeature {
         }));
 
         this.disposable.add(atom.commands.add("atom-workspace", "omnisharp-atom:stop-server", () => {
-            SolutionManager.activeSolutions[this.selectedIndex].dispose();
+            omni.solutionManager.activeSolutions[this.selectedIndex].dispose();
         }));
 
         this.disposable.add(atom.commands.add("atom-workspace", "omnisharp-atom:start-server", () => {
-            SolutionManager.activeSolutions[this.selectedIndex].connect();
+            omni.solutionManager.activeSolutions[this.selectedIndex].connect();
         }));
 
         this.disposable.add(atom.commands.add("atom-workspace", "omnisharp-atom:restart-server", () => {
-            const solution = SolutionManager.activeSolutions[this.selectedIndex];
+            const solution = omni.solutionManager.activeSolutions[this.selectedIndex];
             solution.state
                 .filter(z => z === DriverState.Disconnected)
                 .take(1)
@@ -83,9 +85,9 @@ class SolutionInformation implements OmniSharpAtom.IFeature {
     }
 
     private setupSolutions() {
-        const solutions = SolutionManager.observeActiveSolutions
+        const solutions = this.omni.solutionManager.observeActiveSolutions
             .map(x => x.map(z => z.model))
-            .share();
+            /*.share()*/;
 
         this.disposable.add(solutions.subscribe(o => {
             this.solutions = o;

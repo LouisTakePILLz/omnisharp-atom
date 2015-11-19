@@ -2,24 +2,24 @@ import {OmniSharpAtom} from "../../omnisharp.ts";
 import * as _ from "lodash";
 import {CompositeDisposable} from "../../Disposable";
 import {RenameView} from "../views/rename-view";
-import {Omni} from "../../omni-sharp-server/omni";
+import {OmniManager} from "../../omni-sharp-server/omni";
 import {applyAllChanges} from "../services/apply-changes";
 
 class Rename implements OmniSharpAtom.IFeature {
     private disposable: CompositeDisposable;
     private renameView: RenameView;
 
-    public activate() {
+    public activate(omni: OmniManager) {
         this.disposable = new CompositeDisposable();
         this.renameView = new RenameView();
-        this.disposable.add(Omni.addTextEditorCommand("omnisharp-atom:rename", (e) => {
+        this.disposable.add(omni.addTextEditorCommand("omnisharp-atom:rename", (e) => {
             e.stopImmediatePropagation();
             e.stopPropagation();
             e.preventDefault();
             this.rename();
         }));
 
-        this.disposable.add(Omni.listener.rename.subscribe((data) => {
+        this.disposable.add(omni.listener.rename.subscribe((data) => {
             applyAllChanges(data.response.Changes);
         }));
     }

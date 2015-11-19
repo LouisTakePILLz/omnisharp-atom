@@ -9,12 +9,11 @@ import {DriverState, findCandidates, Candidate} from "omnisharp-client";
 import {GenericSelectListView} from "../omnisharp-atom/views/generic-list-view";
 
 let openSelectList: GenericSelectListView;
-class SolutionInstanceManager implements IDisposable {
+export class SolutionInstanceManager implements IDisposable {
     // These extensions only support server per folder, unlike normal cs files.
     private static _specialCaseExtensions = [".csx", /*".cake"*/];
     /* tslint:disable:variable-name */
     public _unitTestMode_ = false;
-    public _kick_in_the_pants_ = false;
     /* tslint:enable:variable-name */
     private _disposable: CompositeDisposable;
     private _solutionDisposable: CompositeDisposable;
@@ -57,11 +56,7 @@ class SolutionInstanceManager implements IDisposable {
     }
 
     private _activeSolution = new BehaviorSubject<Solution>(null);
-    private _activeSolutionObserable = this._activeSolution
-        .publishReplay(1)
-        .refCount()
-        .distinctUntilChanged()
-        .filter(z => !!z);
+    private _activeSolutionObserable: Observable<Solution>;
 
     public get activeSolution() {
         return this._activeSolutionObserable;
@@ -72,7 +67,7 @@ class SolutionInstanceManager implements IDisposable {
         return this._activatedSubject;
     }
 
-    public activate(activeEditor: Observable<Atom.TextEditor>) {
+    constructor(activeEditor: Observable<Atom.TextEditor>) {
         if (this._activated) return;
 
         this._disposable = new CompositeDisposable();
@@ -98,6 +93,12 @@ class SolutionInstanceManager implements IDisposable {
         this._disposable.add(this._solutionDisposable);
 
         this._activeSolutionsSubject.next([]);
+        
+        const a = this._activeSolution.publishReplay(1);
+        this._disposable.add(a.connect());
+        this._activeSolutionObserable = a
+            .distinctUntilChanged()
+            .filter(z => !!z);
     }
 
     public connect() {
@@ -644,8 +645,3 @@ function fromIterator<T>(iterator: IterableIterator<T>) {
 
     return items;
 }
-
-
-/* tslint:disable:variable-name */
-export let SolutionManager = new SolutionInstanceManager;
-/* tslint:enable:variable-name */

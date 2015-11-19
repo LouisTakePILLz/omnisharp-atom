@@ -1,6 +1,5 @@
 /// <reference path="../tsd.d.ts" />
 import {expect} from "chai";
-import {Omni} from "../../lib/omni-sharp-server/omni";
 import {CompositeDisposable} from "../../lib/Disposable";
 import {Observable} from "@reactivex/rxjs";
 import {setupFeature, openEditor} from "../test-helpers";
@@ -8,14 +7,14 @@ const win32 = process.platform === "win32";
 import {getDnxExe} from "../../lib/omnisharp-atom/atom/command-runner";
 
 describe("Command Runner", () => {
-    setupFeature(["atom/command-runner"]);
+    const omniCb = setupFeature(["atom/command-runner"]);
 
     it("adds commands", (done) => {
         const disposable = new CompositeDisposable();
-        openEditor("commands/project.json")
+        openEditor(omniCb(), "commands/project.json")
             .mergeMapTo(Observable.merge(
-                Omni.solutions.map(z => true),
-                Omni.listener.model.projects.map(z => true)
+                omniCb().solutions.map(z => true),
+                omniCb().listener.model.projects.map(z => true)
             ).debounceTime(10000)
                 .take(2))
             .subscribe(() => {

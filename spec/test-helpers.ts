@@ -1,37 +1,40 @@
 /// <reference path="tsd.d.ts" />
-import {SolutionManager} from "../lib/omni-sharp-server/solution-manager";
+import {OmniManager} from "../lib/omni-sharp-server/omni";
 import {Observable} from "@reactivex/rxjs";
 import {CompositeDisposable, Disposable} from "../lib/Disposable";
 import {DriverState} from "omnisharp-client";
 
-//SolutionManager.solutionObserver.errors.subscribe(error => console.error(JSON.stringify(error)));
-SolutionManager.solutionObserver.events.subscribe(event => console.info(`server event: ${JSON.stringify(event) }`));
-SolutionManager.solutionObserver.requests.subscribe(r => console.info(`request: ${JSON.stringify(r) }`));
-SolutionManager.solutionObserver.responses.subscribe(r => console.info(`response: ${JSON.stringify(r) }`));
 
 export function setupFeature(features: string[], unitTestMode = true) {
     let cd: CompositeDisposable;
+    let omni: OmniManager;
     beforeEach(function(done) {
         cd = new CompositeDisposable();
-        SolutionManager._unitTestMode_ = unitTestMode;
-        SolutionManager._kick_in_the_pants_ = true;
 
+        OmniManager._kick_in_the_pants_ = true;
         atom.config.set("omnisharp-atom:feature-white-list", true);
         atom.config.set("omnisharp-atom:feature-list", features);
 
         atom.packages.activatePackage("language-csharp")
             .then(() => atom.packages.activatePackage("omnisharp-atom"))
-            .then((pack: Atom.Package) => pack.mainModule._activated.delay(10).toPromise())
+            .then((pack: Atom.Package) => pack.mainModule._activated.delay(10).map(x => pack.mainModule.omni).toPromise())
+            .then((_omni: OmniManager) => {
+                omni = _omni;
+                omni.solutionManager.solutionObserver.errors.subscribe(error => console.error(JSON.stringify(error)));
+                omni.solutionManager.solutionObserver.events.subscribe(event => console.info(`server event: ${JSON.stringify(event)}`));
+                omni.solutionManager.solutionObserver.requests.subscribe(r => console.info(`request: ${JSON.stringify(r)}`));
+                omni.solutionManager.solutionObserver.responses.subscribe(r => console.info(`response: ${JSON.stringify(r)}`));
+            })
             .then(() => done());
     });
 
     afterEach(() => {
         atom.config.set("omnisharp-atom:feature-white-list", undefined);
         atom.config.set("omnisharp-atom:feature-list", undefined);
-        SolutionManager._unitTestMode_ = false;
-        SolutionManager._kick_in_the_pants_ = false;
         cd.dispose();
     });
+
+    return () => omni;
 }
 
 export function restoreBuffers() {
@@ -79,13 +82,13 @@ export function restoreBuffers() {
     });*/
 }
 
-export function openEditor(file: string) {
+export function openEditor(omni: OmniManager, file: string) {
     return Observable.fromPromise<Atom.TextEditor>(<any>atom.workspace.open(file))
         .mergeMap(editor =>
-            SolutionManager.getSolutionForEditor(editor).map(solution => ({ editor, solution }))
+            omni.getSolutionForEditor(editor).map(solution => ({ editor, solution }))
         )
         .mergeMap(({editor, solution}) => solution.state.startWith(solution.currentState)
-        .map(state => ({ editor, solution, state: state })))
+            .map(state => ({ editor, solution, state: state })))
         .filter(z => z.state === DriverState.Connected)
         .take(1);
 }

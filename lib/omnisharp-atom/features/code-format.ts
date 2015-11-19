@@ -1,18 +1,20 @@
 import {OmniSharp, OmniSharpAtom} from "../../omnisharp.ts";
 import {CompositeDisposable} from "../../Disposable";
-import {Omni} from "../../omni-sharp-server/omni";
+import {OmniManager} from "../../omni-sharp-server/omni";
 import {applyChanges} from "../services/apply-changes";
 
 class CodeFormat implements OmniSharpAtom.IFeature {
     private disposable: CompositeDisposable;
+    private omni: OmniManager;
 
-    public activate() {
+    public activate(omni: OmniManager) {
         this.disposable = new CompositeDisposable();
-        this.disposable.add(Omni.addTextEditorCommand("omnisharp-atom:code-format",
+        this.omni = omni;
+        this.disposable.add(omni.addTextEditorCommand("omnisharp-atom:code-format",
             () => this.format()));
-        this.disposable.add(Omni.addTextEditorCommand("omnisharp-atom:code-format-on-semicolon",
+        this.disposable.add(omni.addTextEditorCommand("omnisharp-atom:code-format-on-semicolon",
             (event) => this.formatOnKeystroke(event, ";")));
-        this.disposable.add(Omni.addTextEditorCommand("omnisharp-atom:code-format-on-curly-brace",
+        this.disposable.add(omni.addTextEditorCommand("omnisharp-atom:code-format-on-curly-brace",
             (event) => this.formatOnKeystroke(event, "}")));
     }
 
@@ -24,7 +26,7 @@ class CodeFormat implements OmniSharpAtom.IFeature {
         editor = editor || atom.workspace.getActiveTextEditor();
         if (editor) {
             const buffer = editor.getBuffer();
-            Omni.request(editor, solution => {
+            this.omni.request(editor, solution => {
                 const request = <OmniSharp.Models.FormatRangeRequest>{
                     Line: 0,
                     Column: 0,
@@ -44,7 +46,7 @@ class CodeFormat implements OmniSharpAtom.IFeature {
         if (editor) {
             editor.insertText(char);
 
-            Omni.request(editor, solution => {
+            this.omni.request(editor, solution => {
                 const request = <OmniSharp.Models.FormatAfterKeystrokeRequest>{
                     Character: char
                 };

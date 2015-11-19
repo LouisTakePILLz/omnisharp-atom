@@ -1,20 +1,22 @@
 import {OmniSharp, OmniSharpAtom} from "../../omnisharp.ts";
 import {CompositeDisposable, Disposable} from "../../Disposable";
 import {ProjectViewModel} from "../../omni-sharp-server/project-view-model";
-import {Omni} from "../../omni-sharp-server/omni";
+import {OmniManager} from "../../omni-sharp-server/omni";
 import {FrameworkSelectorComponent} from "../views/framework-selector-view";
 import * as React from "react";
 
 class FrameworkSelector implements OmniSharpAtom.IAtomFeature {
     private disposable: CompositeDisposable;
+    private omni: OmniManager;
     private view: HTMLSpanElement;
     private statusBar: any;
     private _active = false;
     public project: ProjectViewModel<any>;
     private _component: FrameworkSelectorComponent;
 
-    public activate() {
+    public activate(omni: OmniManager) {
         this.disposable = new CompositeDisposable();
+        this.omni = omni;
     }
 
     public setup(statusBar: any) {
@@ -57,15 +59,15 @@ class FrameworkSelector implements OmniSharpAtom.IAtomFeature {
             this.view.remove();
         }));
 
-        this.disposable.add(Omni.activeEditor
+        this.disposable.add(this.omni.activeEditor
             .filter(z => !z)
             .subscribe(() => this.view.style.display = "none"));
 
-        this.disposable.add(Omni.activeProject
+        this.disposable.add(this.omni.activeProject
             .filter(z => z.frameworks.length === 1)
             .subscribe(() => this.view.style.display = "none"));
 
-        this.disposable.add(Omni.activeProject
+        this.disposable.add(this.omni.activeProject
             .subscribe((project) => {
                 this.view.style.display = "";
 
@@ -73,7 +75,7 @@ class FrameworkSelector implements OmniSharpAtom.IAtomFeature {
                 this._component.setState({ frameworks: project.frameworks, activeFramework: project.activeFramework });
             }));
 
-        this.disposable.add(Omni.activeFramework
+        this.disposable.add(this.omni.activeFramework
             .subscribe(({project, framework}) => {
                 this.view.style.display = "";
 

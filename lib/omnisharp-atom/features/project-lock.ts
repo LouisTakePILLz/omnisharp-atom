@@ -1,7 +1,7 @@
 import {OmniSharpAtom} from "../../omnisharp.ts";
 import * as path from "path";
 import * as fs from "fs";
-import {Omni} from "../../omni-sharp-server/omni";
+import {OmniManager} from "../../omni-sharp-server/omni";
 import * as _ from "lodash";
 import {IDisposable, CompositeDisposable} from "../../Disposable";
 import {Observable, Subject} from "@reactivex/rxjs";
@@ -26,7 +26,6 @@ function projectLock(solution: Solution, project: ProjectViewModel<any>, filePat
 
     disposable.add(onDidChange);
     disposable.add(onWillThrowWatchError);
-    disposable.add(subject);
 
     return {
         observable: Observable.from(subject.throttleTime(30000)),
@@ -38,10 +37,10 @@ class FileMonitor implements OmniSharpAtom.IFeature {
     private disposable: CompositeDisposable;
     private filesMap = new WeakMap<ProjectViewModel<any>, IDisposable>();
 
-    public activate() {
+    public activate(omni: OmniManager) {
         this.disposable = new CompositeDisposable();
 
-        /*const projectJsonEditors = Omni.configEditors
+        /*const projectJsonEditors = omni.configEditors
             .filter(z => _.endsWith(z.getPath(), "project.json"))
             .mergeMap(editor => {
                 const s = new Subject<boolean>();
@@ -53,14 +52,14 @@ class FileMonitor implements OmniSharpAtom.IFeature {
 
         /*const pauser = Observable.merge(
             projectJsonEditors.throttleTime(10000),
-            Omni.listener.packageRestoreFinished.debounceTime(1000).map(z => true)
+            omni.listener.packageRestoreFinished.debounceTime(1000).map(z => true)
         ).startWith(true);*/
 
-        const changes = Observable.merge(Omni.listener.model.projectAdded, Omni.listener.model.projectChanged)
+        const changes = Observable.merge(omni.listener.model.projectAdded, omni.listener.model.projectChanged)
             .map(project => ({ project, filePath: path.join(project.path, "project.lock.json") }))
             .filter(({ filePath}) => fs.existsSync(filePath))
             .mergeMap(({ project, filePath}) =>
-                Omni.getSolutionForProject(project).map(solution => ({ solution, project, filePath })))
+                omni.getSolutionForProject(project).map(solution => ({ solution, project, filePath })))
             .filter(x => !!x.solution)
             .mergeMap(({ solution, project, filePath }) => {
                 if (this.filesMap.has(project)) {
@@ -73,7 +72,7 @@ class FileMonitor implements OmniSharpAtom.IFeature {
                 this.filesMap.set(project, lock);
                 return lock.observable.map(path => ({ solution, filePath }));
             })
-            .share();
+            /*.share()*/;
             /*.pausable(pauser);*/
 
         this.disposable.add(changes
@@ -86,7 +85,7 @@ class FileMonitor implements OmniSharpAtom.IFeature {
                 });
             }));
 
-        this.disposable.add(Omni.listener.model.projectRemoved
+        this.disposable.add(omni.listener.model.projectRemoved
             .subscribe(project => {
                 const removedItem = this.filesMap.get(project);
                 if (removedItem) {

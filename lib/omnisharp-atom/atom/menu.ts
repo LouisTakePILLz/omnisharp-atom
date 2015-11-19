@@ -1,20 +1,20 @@
 import {OmniSharpAtom} from "../../omnisharp.ts";
 import {CompositeDisposable} from "../../Disposable";
-import {Omni} from "../../omni-sharp-server/omni";
+import {OmniManager} from "../../omni-sharp-server/omni";
 import {readFileSync} from "fs";
 
 class Menu implements OmniSharpAtom.IFeature {
     private disposable: CompositeDisposable;
     private _json: string;
 
-    public activate() {
+    public activate(omni: OmniManager) {
         this.disposable = new CompositeDisposable();
         if (!this._json) {
-            const menuJsonFile = Omni.packageDir + "/omnisharp-atom/menus/omnisharp-menu.json";
+            const menuJsonFile = omni.packageDir + "/omnisharp-atom/menus/omnisharp-menu.json";
             this._json = JSON.parse(readFileSync(menuJsonFile, "utf8")).menu;
         }
 
-        this.disposable.add(Omni.switchActiveSolution((solution, cd) => {
+        this.disposable.add(omni.switchActiveSolution((solution, cd) => {
             if (solution) {
                 cd.add(atom.menu.add(<any>this._json));
             }

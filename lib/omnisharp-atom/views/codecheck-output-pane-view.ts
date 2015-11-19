@@ -1,7 +1,7 @@
 import {OmniSharp} from "../../omnisharp.ts";
 import * as _ from "lodash";
 import * as path from "path";
-import {Omni} from "../../omni-sharp-server/omni";
+
 import * as React from "react";
 import * as $ from "jquery";
 import {ReactClientComponent} from "./react-client-component";
@@ -31,13 +31,13 @@ export class CodeCheckOutputWindow<T extends ICodeCheckOutputWindowProps> extend
 
     public componentWillMount() {
         super.componentWillMount();
-        this.disposable.add(Omni.diagnostics
+        this.disposable.add(omni.diagnostics
             .delay(1)
             .subscribe(z => this.setState({
                 diagnostics: this.model.displayDiagnostics
             })));
 
-        this.disposable.add(Omni.diagnostics
+        this.disposable.add(omni.diagnostics
             .delay(2)
             .subscribe(z => this.updateStateAndScroll()));
     }
@@ -55,7 +55,7 @@ export class CodeCheckOutputWindow<T extends ICodeCheckOutputWindowProps> extend
     }
 
     private goToLine(location: OmniSharp.Models.DiagnosticLocation, index: number) {
-        Omni.navigateTo(location);
+        omni.navigateTo(location);
         this.model.selectedIndex = index;
     }
 

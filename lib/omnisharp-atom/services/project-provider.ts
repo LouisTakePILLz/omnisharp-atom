@@ -1,13 +1,14 @@
 import * as _ from "lodash";
 import {Observable} from "@reactivex/rxjs";
-import {Omni} from "../../omni-sharp-server/omni";
-import {SolutionManager} from "../../omni-sharp-server/solution-manager";
+import {OmniManager} from "../../omni-sharp-server/omni";
 import {ajax} from "jquery";
 const filter = require("fuzzaldrin").filter;
 
+let _omni: OmniManager;
+
 const cache = new Map<string, { prefix?: string; results: string[] }>();
 const versionCache = new Map<string, any>();
-Omni.listener.packagesource
+_omni.listener.packagesource
     .map(z => z.response.Sources)
     .subscribe((sources: string[]) => {
         _.each(sources, source => {
@@ -51,7 +52,7 @@ function fetchFromGithub(source: string, prefix: string, searchPrefix: string): 
     if (prefix !== "_keys") {
         const sp = searchPrefix.split(".");
         const filePrefix = sp.slice(1, sp.length - 1).join(".").toLowerCase();
-        result = result.then((value: { _keys: string[]; [key: string]: string[] }) => {
+        result = result.then((value: { _keys: string[];[key: string]: string[] }) => {
             const k = _.find(cache.get(realSource).results, x => x.toLowerCase() === prefix.toLowerCase());
             if (!filePrefix) {
                 return { prefix: k, results: value._keys };
@@ -132,7 +133,7 @@ class NugetNameProvider implements IAutocompleteProvider {
             packagePrefix = options.replacementPrefix.split(".")[0];
         }
 
-        return SolutionManager.getSolutionForEditor(options.editor)
+        return _omni.getSolutionForEditor(options.editor)
             // Get all sources
             .mergeMap(z => Observable.from(z.model.packageSources))
             .mergeMap(source => {
@@ -142,7 +143,7 @@ class NugetNameProvider implements IAutocompleteProvider {
                         if (!z) {
                             // fall back to the server if source isn"t found
                             console.info(`Falling back to server package search for ${source}.`);
-                            return Omni.request(solution => solution.packagesearch({
+                            return _omni.request(solution => solution.packagesearch({
                                 Search: options.replacementPrefix,
                                 IncludePrerelease: true,
                                 ProjectPath: solution.path,
@@ -161,8 +162,7 @@ class NugetNameProvider implements IAutocompleteProvider {
                     .flatten<string>()
                     .sortBy()
                     .unique()
-                    .map(x =>
-                        makeSuggestion(x, p, options.replacementPrefix))
+                    .map(x => makeSuggestion(x, p, options.replacementPrefix))
                     .value();
             })
             .map(s =>
@@ -185,9 +185,9 @@ class NugetVersionProvider implements IAutocompleteProvider {
         let o: Observable<string[]>;
 
         if (versionCache.has(name)) {
-            o = versionCache.get(name);
+            o = Observable.of(versionCache.get(name));
         } else {
-            o = SolutionManager.getSolutionForEditor(options.editor)
+            o = _omni.getSolutionForEditor(options.editor)
                 // Get all sources
                 .mergeMap(z => Observable.from(z.model.packageSources))
                 .filter(z => {
@@ -198,7 +198,7 @@ class NugetVersionProvider implements IAutocompleteProvider {
                     return true;
                 })
                 .toArray()
-                .mergeMap(sources => Omni.request(solution => solution.packageversion({
+                .mergeMap(sources => _omni.request(solution => solution.packageversion({
                     Id: name,
                     IncludePrerelease: true,
                     ProjectPath: solution.path,
@@ -206,19 +206,15 @@ class NugetVersionProvider implements IAutocompleteProvider {
                 }))
                     .mergeMap(z => Observable.from(z.Versions))
                     .toArray())
-                .publishReplay(1)
-                .refCount();
-
-            versionCache.set(name, o);
+                .take(1)
+                .do(value => versionCache.set(name, value));
         }
 
-        return o.take(1)
-            .map(z => z.map(x =>
-                makeSuggestion2(x, options.replacementPrefix)))
-            .map(s =>
-                filter(s, options.prefix, { key: "_search" }))
+        return o.map(z => z.map(x => makeSuggestion2(x, options.replacementPrefix)))
+            .map(s => filter(s, options.prefix, { key: "_search" }))
             .toPromise();
     }
+
     public fileMatchs = ["project.json"];
     public pathMatch(path: string) {
         return path && !!path.match(versionRegex);
@@ -226,5 +222,7 @@ class NugetVersionProvider implements IAutocompleteProvider {
     public dispose() { /* */ }
 }
 
-const providers = [new NugetNameProvider, new NugetVersionProvider];
-module.exports = providers;
+export function setup(omni: OmniManager) {
+    _omni = omni;
+}
+export const providers = [new NugetNameProvider, new NugetVersionProvider];

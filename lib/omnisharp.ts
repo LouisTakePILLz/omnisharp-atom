@@ -1,10 +1,11 @@
 import {Observable} from "@reactivex/rxjs";
 import {OmniSharp} from "omnisharp-client";
 export {OmniSharp} from "omnisharp-client";
+import {OmniManager} from "./omni-sharp-server/omni";
 
 export module OmniSharpAtom {
     export interface IFeature {
-        activate(): void;
+        activate(omni: OmniManager): void;
         dispose(): void;
         required: boolean;
         title: string;

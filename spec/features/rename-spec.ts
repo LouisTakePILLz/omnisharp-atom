@@ -9,7 +9,7 @@ const Range: typeof TextBuffer.Range = a.Range;
 /* tslint:enable:variable-name */
 
 describe("Rename", () => {
-    setupFeature(["features/rename"]);
+    const omniCb = setupFeature(["features/rename"]);
 
     it("adds commands", () => {
         const disposable = new CompositeDisposable();
@@ -20,7 +20,7 @@ describe("Rename", () => {
     });
 
     it("should select rename text appropriately with selection", (done) => {
-        openEditor("simple/rename/ClassToRename.cs")
+        openEditor(omniCb(), "simple/rename/ClassToRename.cs")
             .subscribe(({editor}) => {
                 editor.setSelectedBufferRange(<any>new Range([4, 16], [4, 22]));
                 atom.commands.dispatch(atom.views.getView(editor), "omnisharp-atom:rename");
@@ -40,7 +40,7 @@ describe("Rename", () => {
     });
 
     it("should select rename text appropriately with cursor", (done) => {
-        openEditor("simple/rename/ClassToRename.cs")
+        openEditor(omniCb(), "simple/rename/ClassToRename.cs")
             .subscribe(({editor}) => {
                 editor.setCursorBufferPosition([4, 18]);
                 atom.commands.dispatch(atom.views.getView(editor), "omnisharp-atom:rename");

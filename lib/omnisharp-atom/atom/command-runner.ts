@@ -2,7 +2,7 @@ import {OmniSharpAtom} from "../../omnisharp.ts";
 import {Solution} from "../../omni-sharp-server/solution";
 import {CompositeDisposable, Disposable} from "../../Disposable";
 import {Observable, Subject} from "@reactivex/rxjs";
-import {Omni} from "../../omni-sharp-server/omni";
+import {OmniManager} from "../../omni-sharp-server/omni";
 import {ProjectViewModel} from "../../omni-sharp-server/project-view-model";
 import {any, each, contains, pull} from "lodash";
 import {spawn} from "child_process";
@@ -27,6 +27,7 @@ if (win32) {
 
 class CommandRunner implements OmniSharpAtom.IFeature {
     private disposable: CompositeDisposable;
+    private omni: OmniManager;
     private _projectMap = new WeakMap<ProjectViewModel<any>, CompositeDisposable>();
 
     private _watchProcesses: RunProcess[] = [];
@@ -36,16 +37,17 @@ class CommandRunner implements OmniSharpAtom.IFeature {
 
     private _processesChanged: Subject<RunProcess[]>;
 
-    public activate() {
+    public activate(omni: OmniManager) {
+        this.omni = omni;
         this.disposable = new CompositeDisposable();
         this.disposable.add(
             Observable.merge(
                 // Get all currently defined projects
-                Omni.solutions.mergeMap(z => Observable.from(z.model.projects)),
-                Omni.listener.model.projectAdded
+                omni.solutions.mergeMap(z => Observable.from(z.model.projects)),
+                omni.listener.model.projectAdded
             ).subscribe(project => this.addCommands(project)));
 
-        this.disposable.add(Omni.listener.model.projectChanged
+        this.disposable.add(omni.listener.model.projectChanged
             .subscribe(project => {
                 const cd = this._projectMap.get(project);
                 if (cd) {
@@ -56,7 +58,7 @@ class CommandRunner implements OmniSharpAtom.IFeature {
                 this.addCommands(project);
             }));
 
-        this.disposable.add(Omni.listener.model.projectRemoved
+        this.disposable.add(omni.listener.model.projectRemoved
             .subscribe(project => {
                 const cd = this._projectMap.get(project);
                 if (cd) {
@@ -71,7 +73,7 @@ class CommandRunner implements OmniSharpAtom.IFeature {
         // Auto restart the process if a file changes for a project that applies
         const restart = new Subject<Atom.TextEditor>();
 
-        this.disposable.add(Omni.eachEditor((editor, cd) => {
+        this.disposable.add(omni.eachEditor((editor, cd) => {
             cd.add(editor.onDidSave(() => restart.next(editor)));
             cd.add(editor.getBuffer().onDidReload(() => restart.next(editor)));
         }));
@@ -79,7 +81,7 @@ class CommandRunner implements OmniSharpAtom.IFeature {
         this.disposable.add(restart
             .filter(z => !!this._watchProcesses.length)
             .mergeMap(editor =>
-                Omni.activeModel
+                omni.activeModel
                     .concatMap(model => model.getProjectContainingEditor(editor))
                     .take(1)
                     .filter(project => !!project))
@@ -117,7 +119,7 @@ class CommandRunner implements OmniSharpAtom.IFeature {
     }
 
     private daemonProcess(project: ProjectViewModel<any>, command: string) {
-        const process = new RunProcess(project, command, true);
+        const process = new RunProcess(this.omni, project, command, true);
         this._watchProcesses.push(process);
         this._processesChanged.next(this.processes);
         process.disposable.add(Disposable.create(() => {
@@ -132,7 +134,7 @@ class CommandRunner implements OmniSharpAtom.IFeature {
     }
 
     private runProcess(project: ProjectViewModel<any>, command: string) {
-        const process = new RunProcess(project, command);
+        const process = new RunProcess(this.omni, project, command);
         process.start();
     }
 
@@ -158,7 +160,7 @@ export class RunProcess {
     private id: string;
     private process: any;
 
-    constructor(public project: ProjectViewModel<any>, private command: string, private watch = false) {
+    constructor(private omni: OmniManager, public project: ProjectViewModel<any>, private command: string, private watch = false) {
         this.id = `${this.project.name}${this.command}`;
         this.disposable.add(dock.addWindow(this.id, `${this.project.name} ${this.watch ? "--watch" : ""} ${this.command}`, CommandOutputWindow, this, {
             closeable: true,
@@ -167,7 +169,7 @@ export class RunProcess {
     }
 
     public start() {
-        const solution = Omni.getSolutionForProject(this.project)
+        const solution = this.omni.getSolutionForProject(this.project)
             .map(x => normalize(getDnxExe(x)))
             .do(() => dock.selectWindow(this.id))
             .subscribe((runtime) => this.bootRuntime(runtime));

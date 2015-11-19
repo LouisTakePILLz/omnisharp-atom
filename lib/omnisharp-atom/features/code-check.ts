@@ -2,13 +2,14 @@ import {OmniSharp, OmniSharpAtom} from "../../omnisharp.ts";
 import * as _ from "lodash";
 import {CompositeDisposable, Disposable} from "../../Disposable";
 import {Observable, Subject} from "@reactivex/rxjs";
-import {Omni} from "../../omni-sharp-server/omni";
+import {OmniManager} from "../../omni-sharp-server/omni";
 import {dock} from "../atom/dock";
 import {CodeCheckOutputWindow} from "../views/codecheck-output-pane-view";
 import {reloadWorkspace} from "./reload-workspace";
 
 class CodeCheck implements OmniSharpAtom.IFeature {
     private disposable: CompositeDisposable;
+    private omni: OmniManager;
 
     public displayDiagnostics: OmniSharp.Models.DiagnosticLocation[] = [];
     public selectedIndex: number = 0;
@@ -16,8 +17,9 @@ class CodeCheck implements OmniSharpAtom.IFeature {
     private _editorSubjects = new WeakMap<Atom.TextEditor, () => Observable<OmniSharp.Models.DiagnosticLocation[]>>();
     private _fullCodeCheck: Subject<any>;
 
-    public activate() {
+    public activate(omni: OmniManager) {
         this.disposable = new CompositeDisposable();
+        this.omni = omni;
 
         this._fullCodeCheck = new Subject<any>();
         this.disposable.add(this._fullCodeCheck);
@@ -28,7 +30,7 @@ class CodeCheck implements OmniSharpAtom.IFeature {
 
         this.disposable.add(atom.commands.add("atom-workspace", "omnisharp-atom:go-to-diagnostic", () => {
             if (this.displayDiagnostics[this.selectedIndex])
-                Omni.navigateTo(this.displayDiagnostics[this.selectedIndex]);
+                omni.navigateTo(this.displayDiagnostics[this.selectedIndex]);
         }));
 
         this.disposable.add(atom.commands.add("atom-workspace", "omnisharp-atom:previous-diagnostic", () => {
@@ -37,15 +39,15 @@ class CodeCheck implements OmniSharpAtom.IFeature {
 
         this.disposable.add(atom.commands.add("atom-workspace", "omnisharp-atom:go-to-next-diagnostic", () => {
             this.updateSelectedItem(this.selectedIndex + 1);
-            Omni.navigateTo(this.displayDiagnostics[this.selectedIndex]);
+            omni.navigateTo(this.displayDiagnostics[this.selectedIndex]);
         }));
 
         this.disposable.add(atom.commands.add("atom-workspace", "omnisharp-atom:go-to-previous-diagnostic", () => {
             this.updateSelectedItem(this.selectedIndex - 1);
-            Omni.navigateTo(this.displayDiagnostics[this.selectedIndex]);
+            omni.navigateTo(this.displayDiagnostics[this.selectedIndex]);
         }));
 
-        this.disposable.add(Omni.eachEditor((editor, cd) => {
+        this.disposable.add(omni.eachEditor((editor, cd) => {
             const subject = new Subject<any>();
 
             const o = subject
@@ -53,7 +55,7 @@ class CodeCheck implements OmniSharpAtom.IFeature {
                 .filter(() => !editor.isDestroyed())
                 .mergeMap(() => this._doCodeCheck(editor))
                 .map(response => response.QuickFixes || [])
-                .share();
+                /*.share()*/;
 
             this._editorSubjects.set(editor, () => {
                 const result = o.take(1);
@@ -70,16 +72,16 @@ class CodeCheck implements OmniSharpAtom.IFeature {
         }));
 
         // Linter is doing this for us!
-        /*this.disposable.add(Omni.switchActiveEditor((editor, cd) => {
-            cd.add(Omni.whenEditorConnected(editor).subscribe(() => this.doCodeCheck(editor)));
+        /*this.disposable.add(omni.switchActiveEditor((editor, cd) => {
+            cd.add(omni.whenEditorConnected(editor).subscribe(() => this.doCodeCheck(editor)));
         }));*/
 
-        this.disposable.add(Omni.diagnostics
+        this.disposable.add(omni.diagnostics
             .subscribe(diagnostics => {
                 this.displayDiagnostics = this.filterOnlyWarningsAndErrors(diagnostics);
             }));
 
-        this.disposable.add(Omni.diagnostics.subscribe(s => {
+        this.disposable.add(omni.diagnostics.subscribe(s => {
             this.scrollTop = 0;
             this.selectedIndex = 0;
         }));
@@ -92,8 +94,8 @@ class CodeCheck implements OmniSharpAtom.IFeature {
 
         let started = 0, finished = 0;
         this.disposable.add(Observable.combineLatest(
-            Omni.listener.packageRestoreStarted.map(x => started++),
-            Omni.listener.packageRestoreFinished.map(x => finished++),
+            omni.listener.packageRestoreStarted.map(x => started++),
+            omni.listener.packageRestoreFinished.map(x => finished++),
             (s, f) => s === f)
             .filter(r => r)
             .debounceTime(2000)
@@ -103,19 +105,19 @@ class CodeCheck implements OmniSharpAtom.IFeature {
                 this.doFullCodeCheck();
             }));
 
-        this.disposable.add(Omni.listener.packageRestoreFinished.debounceTime(3000).subscribe(() => this.doFullCodeCheck()));
+        this.disposable.add(omni.listener.packageRestoreFinished.debounceTime(3000).subscribe(() => this.doFullCodeCheck()));
         this.disposable.add(atom.commands.add("atom-workspace", "omnisharp-atom:code-check", () => this.doFullCodeCheck()));
 
         this.disposable.add(this._fullCodeCheck
             .concatMap(() => reloadWorkspace.reloadWorkspace()
                 .toArray()
-                .concatMap(x => Omni.solutions)
+                .concatMap(x => omni.solutions)
                 .concatMap(solution => solution.whenConnected()
                     .do(() => solution.codecheck({ FileName: null })))
             )
             .subscribe());
 
-        Omni.registerConfiguration(solution => solution
+        omni.registerConfiguration(solution => solution
             .whenConnected()
             .delay(1000)
             .subscribe(() => this._fullCodeCheck.next(true)));
@@ -145,7 +147,7 @@ class CodeCheck implements OmniSharpAtom.IFeature {
     }
 
     private _doCodeCheck(editor: Atom.TextEditor) {
-        return Omni.request(editor, solution => solution.codecheck({}));
+        return this.omni.request(editor, solution => solution.codecheck({}));
     };
 
     public doCodeCheck(editor: Atom.TextEditor) {

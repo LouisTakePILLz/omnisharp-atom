@@ -1,5 +1,5 @@
 import {OmniSharp, OmniSharpAtom} from "../../omnisharp.ts";
-import {Omni} from "../../omni-sharp-server/omni";
+import {OmniManager} from "../../omni-sharp-server/omni";
 import {CompositeDisposable, Disposable} from "../../Disposable";
 import {each, extend, has, contains, any, range, remove, pull, find, chain, unique, set, findIndex, all, isEqual, min, debounce, sortBy} from "lodash";
 import {Observable, Subject, ReplaySubject} from "@reactivex/rxjs";
@@ -12,20 +12,22 @@ const AtomGrammar = require((<any>atom).config.resourcePath + "/node_modules/fir
 const DEBOUNCE_TIME = 240/*240*/;
 
 class Highlight implements OmniSharpAtom.IFeature {
+    private omni: OmniManager;
     private disposable: CompositeDisposable;
     private editors: Array<Atom.TextEditor>;
 
-    public activate() {
+    public activate(omni: OmniManager) {
         this.disposable = new CompositeDisposable();
+        this.omni = omni;
         this.editors = [];
 
-        this.disposable.add(Omni.eachEditor((editor, cd) => this.setupEditor(editor, cd)));
+        this.disposable.add(omni.eachEditor((editor, cd) => this.setupEditor(editor, cd)));
 
         this.disposable.add(
             isObserveRetokenizing(
-                Omni.activeEditor.take(1)
+                omni.activeEditor.take(1)
                     .filter(x => !!x)
-                    .mergeMap(editor => Omni.listener.highlight
+                    .mergeMap(editor => omni.listener.highlight
                         .filter(z => z.request.FileName === editor.getPath())
                         .map(({request, response}) => ({ editor, request, response }))
                         .take(1))
@@ -39,9 +41,9 @@ class Highlight implements OmniSharpAtom.IFeature {
 
         this.disposable.add(
             isObserveRetokenizing(
-                Omni.listener.highlight
+                omni.listener.highlight
                     .map(({request, response}) => ({ editor: find(this.editors, editor => editor.getPath() === request.FileName), request, response }))
-                    .mergeMap(z => Omni.activeEditor.take(1).filter(x => x !== z.editor)
+                    .mergeMap(z => omni.activeEditor.take(1).filter(x => x !== z.editor)
                         .map(x => z))
             )
                 .subscribe(({editor, request, response}) => {
@@ -51,13 +53,13 @@ class Highlight implements OmniSharpAtom.IFeature {
                 }));
 
         this.disposable.add(isEditorObserveRetokenizing(
-            Observable.merge(Omni.activeEditor,
-                Omni.activeFramework
-                    .mergeMap(z => Omni.listener.highlight
+            Observable.merge(omni.activeEditor,
+                omni.activeFramework
+                    .mergeMap(z => omni.listener.highlight
                         .filter(x => contains(x.request.ProjectNames, `${z.project.name}+${z.framework.ShortName}`))
                         .map(({request, response}) => ({ editor: find(this.editors, editor => editor.getPath() === request.FileName), request, response }))
                         .take(1))
-                    .mergeMap(z => Omni.activeEditor))
+                    .mergeMap(z => omni.activeEditor))
                 .debounceTime(DEBOUNCE_TIME)
                 .filter(z => !!z)
         )
@@ -93,7 +95,7 @@ class Highlight implements OmniSharpAtom.IFeature {
         if (!editor.displayBuffer.tokenizedBuffer["_chunkSize"])
             editor.displayBuffer.tokenizedBuffer["chunkSize"] = 20;
 
-        editor.setGrammar = setGrammar;
+        editor.setGrammar = setGrammar(this.omni);
         editor.setGrammar(editor.getGrammar());
 
         const grammar: IHighlightingGrammar = <any>editor.getGrammar();
@@ -159,7 +161,7 @@ class Highlight implements OmniSharpAtom.IFeature {
 
         disposable.add(issueRequest
             .debounceTime(DEBOUNCE_TIME)
-            .mergeMap(z => Omni.getProject(editor).map(({name, activeFramework}) => activeFramework.Name === "all" ? "" : name + "+" + activeFramework.ShortName)).timeout(200, Observable.of(""))
+            .mergeMap(z => this.omni.getProject(editor).map(({name, activeFramework}) => activeFramework.Name === "all" ? "" : name + "+" + activeFramework.ShortName)).timeout(200, Observable.of(""))
             .switchMap((framework) => {
                 let projects: string[] = [];
                 if (framework)
@@ -169,7 +171,7 @@ class Highlight implements OmniSharpAtom.IFeature {
                 if (!linesToFetch || !linesToFetch.length)
                     linesToFetch = [];
 
-                return Omni.request(editor, solution => solution.highlight({
+                return this.omni.request(editor, solution => solution.highlight({
                     ProjectNames: projects,
                     Lines: <any>linesToFetch,
                     ExcludeClassifications: [
@@ -189,7 +191,7 @@ class Highlight implements OmniSharpAtom.IFeature {
             })
         );
 
-        disposable.add(Omni.getProject(editor)
+        disposable.add(this.omni.getProject(editor)
             .mergeMap(z => z.observe.activeFramework).subscribe(() => {
                 grammar.linesToFetch = [];
                 grammar.responses.clear();
@@ -203,7 +205,7 @@ class Highlight implements OmniSharpAtom.IFeature {
             issueRequest.next(true);
         }));
 
-        disposable.add(Omni.whenEditorConnected(editor).delay(1000).subscribe({
+        disposable.add(this.omni.whenEditorConnected(editor).delay(1000).subscribe({
             complete: () => {
                 issueRequest.next(true);
             }
@@ -626,13 +628,15 @@ function getAtomStyleForToken(grammar: string, tags: number[], token: OmniSharp.
     });
 }
 
-function setGrammar(grammar: FirstMate.Grammar): FirstMate.Grammar {
-    if (!grammar["omnisharp"] && Omni.isValidGrammar(grammar)) {
-        const newGrammar = new (<any>Grammar)(this, grammar);
-        each(grammar, (x, i) => has(grammar, i) && (newGrammar[i] = x));
-        grammar = newGrammar;
-    }
-    return this._setGrammar(grammar);
+function setGrammar(omni: OmniManager) {
+    return function setGrammar(grammar: FirstMate.Grammar): FirstMate.Grammar {
+        if (!grammar["omnisharp"] && omni.isValidGrammar(grammar)) {
+            const newGrammar = new (<any>Grammar)(this, grammar);
+            each(grammar, (x, i) => has(grammar, i) && (newGrammar[i] = x));
+            grammar = newGrammar;
+        }
+        return this._setGrammar(grammar);
+    };
 }
 
 export const enhancedHighlighting = new Highlight;

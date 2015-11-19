@@ -1,7 +1,7 @@
 import {OmniSharpAtom} from "../../omnisharp.ts";
 import {CompositeDisposable, Disposable, IDisposable} from "../../Disposable";
 import {each} from "lodash";
-import {Omni} from "../../omni-sharp-server/omni";
+import {OmniManager} from "../../omni-sharp-server/omni";
 import * as React from "react";
 import {dock} from "../atom/dock";
 
@@ -27,11 +27,13 @@ const buttons = [
 
 class FeatureEditorButtons implements OmniSharpAtom.IAtomFeature {
     private disposable: CompositeDisposable;
+    private omni: OmniManager;
     private statusBar: any;
     private _active = false;
 
-    public activate() {
+    public activate(omni: OmniManager) {
         this.disposable = new CompositeDisposable();
+        this.omni = omni;
     }
 
     public dispose() {
@@ -100,7 +102,7 @@ class FeatureEditorButtons implements OmniSharpAtom.IAtomFeature {
             view.remove();
         }));
 
-        this.disposable.add(Omni.activeEditor
+        this.disposable.add(this.omni.activeEditor
             .subscribe((editor) => editor ? (view.style.display = "") : (view.style.display = "none")));
     }
 
@@ -113,7 +115,7 @@ class FeatureEditorButtons implements OmniSharpAtom.IAtomFeature {
 class FeatureButtons implements OmniSharpAtom.IFeature {
     private disposable: CompositeDisposable;
 
-    public activate() {
+    public activate(omni: OmniManager) {
         this.disposable = new CompositeDisposable();
         each(buttons, (button, index) => this._button(button, index));
     }

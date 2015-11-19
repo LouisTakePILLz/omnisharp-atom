@@ -1,7 +1,7 @@
 import {OmniSharp, OmniSharpAtom} from "../../omnisharp.ts";
 import {CompositeDisposable, Disposable, IDisposable} from "../../Disposable";
 import {Observable, Subject} from "@reactivex/rxjs";
-import {Omni} from "../../omni-sharp-server/omni";
+import {OmniManager} from "../../omni-sharp-server/omni";
 import * as _ from "lodash";
 import {SignatureView} from "../views/signature-help-view";
 
@@ -16,7 +16,7 @@ class SignatureHelp implements OmniSharpAtom.IFeature {
     private disposable: CompositeDisposable;
     private _bubble: SignatureBubble;
 
-    public activate() {
+    public activate(omni: OmniManager) {
         this.disposable = new CompositeDisposable();
         const issueRequest = new Subject<TextBuffer.Point>();
         const delayIssueRequest = new Subject<any>();
@@ -29,7 +29,7 @@ class SignatureHelp implements OmniSharpAtom.IFeature {
                 issueRequest.next(position);
             }));
 
-        this.disposable.add(Omni.addTextEditorCommand("omnisharp-atom:signature-help",
+        this.disposable.add(omni.addTextEditorCommand("omnisharp-atom:signature-help",
             (e) => delayIssueRequest.next(null)));
 
         this.disposable.add(atom.commands.onWillDispatch(function(event: Event) {
@@ -39,8 +39,8 @@ class SignatureHelp implements OmniSharpAtom.IFeature {
         }));
 
         const shouldContinue = Observable.zip(
-            Omni.listener.signatureHelp,
-            Omni.listener.signatureHelp.skip(1).startWith(null),
+            omni.listener.signatureHelp,
+            omni.listener.signatureHelp.skip(1).startWith(null),
             (current, previous) => {
                 if (previous === null) return true;
 
@@ -63,10 +63,10 @@ class SignatureHelp implements OmniSharpAtom.IFeature {
             .filter(z => !z)
             .subscribe(() => this._bubble && this._bubble.dispose()));
 
-        this.disposable.add(Omni.switchActiveEditor((editor, cd) => {
+        this.disposable.add(omni.switchActiveEditor((editor, cd) => {
             cd.add(issueRequest
                 .mergeMap((position: TextBuffer.Point) =>
-                    Omni.request(editor, solution => solution.signatureHelp({
+                    omni.request(editor, solution => solution.signatureHelp({
                         Line: position.row,
                         Column: position.column,
                     }))

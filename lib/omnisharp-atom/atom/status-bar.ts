@@ -1,6 +1,7 @@
 import {OmniSharpAtom} from "../../omnisharp.ts";
 import {CompositeDisposable, Disposable} from "../../Disposable";
 import {StatusBarElement} from "../views/status-bar-view";
+import {OmniManager} from "../../omni-sharp-server/omni";
 
 class StatusBar implements OmniSharpAtom.IAtomFeature {
     private disposable: CompositeDisposable;
@@ -8,7 +9,7 @@ class StatusBar implements OmniSharpAtom.IAtomFeature {
     private statusBar: any;
     private _active = false;
 
-    public activate() {
+    public activate(omni: OmniManager) {
         this.disposable = new CompositeDisposable();
         this.disposable.add(Disposable.create(() => this._active = false));
     }

@@ -4,7 +4,7 @@
 import {OmniSharp, OmniSharpAtom} from "../../omnisharp.ts";
 import {CompositeDisposable, Disposable, IDisposable} from "../../Disposable";
 import { Observable, Subscription} from "@reactivex/rxjs";
-import {Omni} from "../../omni-sharp-server/omni";
+import {OmniManager} from "../../omni-sharp-server/omni";
 import {TooltipView} from "../views/tooltip-view";
 import * as $ from "jquery";
 const escape = require("escape-html");
@@ -12,14 +12,14 @@ const escape = require("escape-html");
 class TypeLookup implements OmniSharpAtom.IFeature {
     private disposable: CompositeDisposable;
 
-    public activate() {
+    public activate(omni: OmniManager) {
         /* tslint:disable:no-string-literal */
         this.disposable = new CompositeDisposable();
-        this.disposable.add(Omni.switchActiveEditor((editor, cd) => {
+        this.disposable.add(omni.switchActiveEditor((editor, cd) => {
             // subscribe for tooltips
             // inspiration : https://github.com/chaika2013/ide-haskell
             const editorView = $(atom.views.getView(editor));
-            const tooltip = editor["__omniTooltip"] = new Tooltip(editorView, editor);
+            const tooltip = editor["__omniTooltip"] = new Tooltip(omni, editorView, editor);
             cd.add(tooltip);
 
             cd.add(editor.onDidDestroy(() => {
@@ -28,8 +28,8 @@ class TypeLookup implements OmniSharpAtom.IFeature {
             }));
         }));
 
-        this.disposable.add(Omni.addTextEditorCommand("omnisharp-atom:type-lookup", () => {
-            Omni.activeEditor.first().subscribe(editor => {
+        this.disposable.add(omni.addTextEditorCommand("omnisharp-atom:type-lookup", () => {
+            omni.activeEditor.first().subscribe(editor => {
                 const tooltip = <Tooltip>editor["__omniTooltip"];
                 tooltip.showExpressionTypeOnCommand();
             });
@@ -54,7 +54,7 @@ class Tooltip implements IDisposable {
     private rawView: any;
     private disposable: CompositeDisposable;
 
-    constructor(private editorView: JQuery, private editor: Atom.TextEditor) {
+    constructor(private omni: OmniManager, private editorView: JQuery, private editor: Atom.TextEditor) {
         this.rawView = editorView[0];
 
         const cd = this.disposable = new CompositeDisposable();
@@ -90,7 +90,7 @@ class Tooltip implements IDisposable {
 
         cd.add(mouseout.subscribe((e) => this.hideExpressionType()));
 
-        cd.add(Omni.switchActiveEditor((edt, innerCd) => {
+        cd.add(omni.switchActiveEditor((edt, innerCd) => {
             innerCd.add(Disposable.create(() => this.hideExpressionType()));
         }));
 
@@ -128,7 +128,7 @@ class Tooltip implements IDisposable {
     }
 
     private showExpressionTypeOnMouseOver(e: MouseEvent, bufferPt: TextBuffer.Point) {
-        if (!Omni.isOn) {
+        if (!this.omni.isOn) {
             return;
         }
 
@@ -162,7 +162,7 @@ class Tooltip implements IDisposable {
         this.exprTypeTooltip = new TooltipView(tooltipRect);
 
         // Actually make the program manager query
-        Omni.request(solution => solution.typelookup({
+        this.omni.request(solution => solution.typelookup({
             IncludeDocumentation: true,
             Line: bufferPt.row,
             Column: bufferPt.column

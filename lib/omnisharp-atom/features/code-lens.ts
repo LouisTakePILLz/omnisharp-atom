@@ -2,7 +2,7 @@ import {OmniSharp, OmniSharpAtom} from "../../omnisharp.ts";
 import * as _ from "lodash";
 import {CompositeDisposable, Disposable, IDisposable} from "../../Disposable";
 import {Observable, Subject, Scheduler} from "@reactivex/rxjs";
-import {Omni} from "../../omni-sharp-server/omni";
+import {OmniManager} from "../../omni-sharp-server/omni";
 import {read, write} from "fastdom";
 
 interface IDecoration {
@@ -14,12 +14,14 @@ interface IDecoration {
 
 class CodeLens implements OmniSharpAtom.IFeature {
     private disposable: CompositeDisposable;
+    private omni: OmniManager;
     private decorations = new WeakMap<Atom.TextEditor, Set<Lens>>();
 
-    public activate() {
+    public activate(omni: OmniManager) {
         this.disposable = new CompositeDisposable();
+        this.omni = omni;
 
-        this.disposable.add(Omni.eachEditor((editor, cd) => {
+        this.disposable.add(omni.eachEditor((editor, cd) => {
             cd.add(Disposable.create(() => {
                 const markers = this.decorations.get(editor);
 
@@ -39,7 +41,7 @@ class CodeLens implements OmniSharpAtom.IFeature {
             }));
         }));
 
-        this.disposable.add(Omni.switchActiveEditor((editor, cd) => {
+        this.disposable.add(omni.switchActiveEditor((editor, cd) => {
             const items = this.decorations.get(editor);
             if (!items) this.decorations.set(editor, new Set<Lens>());
 
@@ -73,7 +75,7 @@ class CodeLens implements OmniSharpAtom.IFeature {
 
             cd.add(editor.getBuffer().onDidSave(() => !subject.isUnsubscribed && subject.next(true)));
             cd.add(editor.getBuffer().onDidReload(() => !subject.isUnsubscribed && subject.next(true)));
-            cd.add(Omni.whenEditorConnected(editor).subscribe(() => subject.next(true)));
+            cd.add(omni.whenEditorConnected(editor).subscribe(() => subject.next(true)));
 
             cd.add(editor.onDidChangeScrollTop(() => this.updateDecoratorVisiblility(editor)));
 
@@ -107,7 +109,7 @@ class CodeLens implements OmniSharpAtom.IFeature {
             return Observable.empty<number>();
         }
 
-        return Omni.request(editor, solution => solution.currentfilemembersasflat({ Buffer: null, Changes: null }))
+        return this.omni.request(editor, solution => solution.currentfilemembersasflat({ Buffer: null, Changes: null }))
             .observeOn(Scheduler.nextTick)
             .filter(fileMembers => !!fileMembers)
             .mergeMap(fileMembers => Observable.from(fileMembers))
@@ -130,7 +132,7 @@ class CodeLens implements OmniSharpAtom.IFeature {
                     updated.add(lens);
                     lens.invalidate();
                 } else {
-                    lens = new Lens(editor, fileMember, marker, range, Disposable.create(() => {
+                    lens = new Lens(this.omni, editor, fileMember, marker, range, Disposable.create(() => {
                         decorations.delete(lens);
                     }));
                     updated.add(lens);
@@ -177,7 +179,7 @@ export class Lens implements IDisposable {
 
     public loaded: boolean = false;
 
-    constructor(private _editor: Atom.TextEditor, private _member: OmniSharp.Models.QuickFix, private _marker: Atom.Marker, private _range: TextBuffer.Range, disposer: IDisposable) {
+    constructor(private omni: OmniManager, private _editor: Atom.TextEditor, private _member: OmniSharp.Models.QuickFix, private _marker: Atom.Marker, private _range: TextBuffer.Range, disposer: IDisposable) {
         this._row = _range.getRows()[0];
         this._update = new Subject<any>();
         this._disposable.add(this._update);
@@ -186,11 +188,11 @@ export class Lens implements IDisposable {
         this._updateObservable = this._update
             .observeOn(Scheduler.nextTick)
             .filter(x => !!x)
-            .mergeMap(() => Omni.request(this._editor, solution =>
+            .mergeMap(() => omni.request(this._editor, solution =>
                 solution.findusages({ FileName: this._path, Column: this._member.Column + 1, Line: this._member.Line, Buffer: null, Changes: null }, { silent: true })))
             .filter(x => x && x.QuickFixes && !!x.QuickFixes.length)
             .map(x => x && x.QuickFixes && x.QuickFixes.length - 1)
-            .share();
+            /*.share()*/;
 
         this._disposable.add(this._updateObservable
             .take(1)
@@ -272,7 +274,7 @@ export class Lens implements IDisposable {
         element.style.left = "16px";
         element.classList.add("highlight-info", "badge", "badge-small");
         element.textContent = count.toString();
-        element.onclick = () => Omni.request(this._editor, s => s.findusages({ FileName: this._path, Column: this._member.Column + 1, Line: this._member.Line, Buffer: null, Changes: null }));
+        element.onclick = () => this.omni.request(this._editor, s => s.findusages({ FileName: this._path, Column: this._member.Column + 1, Line: this._member.Line, Buffer: null, Changes: null }));
 
         this._decoration = <any>this._editor.decorateMarker(this._marker, { type: "overlay", class: `codelens`, item: this._element, position: "head" });
         this._disposable.add(Disposable.create(() => {

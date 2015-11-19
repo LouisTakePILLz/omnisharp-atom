@@ -1,6 +1,6 @@
 import * as spacePenViews from "atom-space-pen-views";
 
-import {Omni} from "../../omni-sharp-server/omni";
+
 
 export class RenameView extends spacePenViews.View {
     public static content() {
@@ -31,7 +31,7 @@ export class RenameView extends spacePenViews.View {
     }
 
     public rename() {
-        Omni.request(solution => solution.rename({
+        omni.request(solution => solution.rename({
             RenameTo: this.miniEditor.getText(),
             WantsTextChanges: true
         }));

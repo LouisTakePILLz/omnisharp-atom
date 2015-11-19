@@ -3,5 +3,5 @@ import {expect} from "chai";
 import {setupFeature} from "../test-helpers";
 
 describe("Highlight", () => {
-    setupFeature(["features/highlight"]);
+    const omniCb = setupFeature(["features/highlight"]);
 });

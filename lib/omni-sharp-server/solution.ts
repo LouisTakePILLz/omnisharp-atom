@@ -157,7 +157,6 @@ export class Solution extends ClientV2 {
             this._solutionDisposable.add(branchSubject
                 .distinctUntilChanged()
                 .subscribe(() => atom.commands.dispatch(atom.views.getView(atom.workspace), "omnisharp-atom:restart-server")));
-            this._solutionDisposable.add(branchSubject);
 
             this._solutionDisposable.add(this.repository.onDidChangeStatuses(() => {
                 branchSubject.next((<any>this.repository).branch);

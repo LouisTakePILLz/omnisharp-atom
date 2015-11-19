@@ -1,7 +1,7 @@
 import {OmniSharp, OmniSharpAtom} from "../omnisharp.ts";
 import {CompositeDisposable, Disposable, IDisposable} from "../Disposable";
 import {Observable, ReplaySubject, Subject, BehaviorSubject, Scheduler} from "@reactivex/rxjs";
-import {SolutionManager} from "./solution-manager";
+import {SolutionInstanceManager} from "./solution-manager";
 import {Solution} from "./solution";
 import * as _ from "lodash";
 import {basename} from "path";
@@ -23,8 +23,10 @@ function wrapEditorObservable(observable: Observable<Atom.TextEditor>) {
         .filter(editor => !editor || !editor.isDestroyed());
 }
 
-class OmniManager implements IDisposable {
+export class OmniManager implements IDisposable {
+    public static _kick_in_the_pants_: boolean = false;
     private disposable: CompositeDisposable;
+    public solutionManager: SolutionInstanceManager;
 
     private _editors: Observable<Atom.TextEditor>;
     private _configEditors: Observable<Atom.TextEditor>;
@@ -33,28 +35,17 @@ class OmniManager implements IDisposable {
 
     private _activeEditorSubject = new BehaviorSubject<Atom.TextEditor>(null);
     private _activeEditor = wrapEditorObservable(this._activeEditorSubject)
-        .publishReplay(1)
-        .refCount();
+        .publishReplay(1);
 
     private _activeConfigEditorSubject = new BehaviorSubject<Atom.TextEditor>(null);
     private _activeConfigEditor = wrapEditorObservable(this._activeConfigEditorSubject)
-        .publishReplay(1)
-        .refCount();
+        .publishReplay(1);
 
     private _activeEditorOrConfigEditor = wrapEditorObservable(Observable.combineLatest(this._activeEditorSubject, this._activeConfigEditorSubject, (editor, config) => editor || config || null));
 
-    private _activeProject = this._activeEditorOrConfigEditor
-        .switchMap(editor => SolutionManager.getSolutionForEditor(editor)
-            .mergeMap(z => z.model.getProjectForEditor(editor)))
-        .publishReplay(1)
-        .refCount();
+    private _activeProject: Observable<ProjectViewModel<any>>;
 
-    private _activeFramework = this._activeEditorOrConfigEditor
-        .switchMap(editor => SolutionManager.getSolutionForEditor(editor)
-            .mergeMap(z => z.model.getProjectForEditor(editor)))
-        .switchMap(project => project.observe.activeFramework.map(framework => ({ project, framework })))
-        .publishReplay(1)
-        .refCount();
+    private _activeFramework: Observable<{ project: ProjectViewModel<any>; framework: OmniSharp.Models.DnxFramework; }>;
 
     private _diagnostics: Observable<OmniSharp.Models.DiagnosticLocation[]>;
     public get diagnostics() { return this._diagnostics; }
@@ -66,11 +57,15 @@ class OmniManager implements IDisposable {
 
     public activate() {
         this.disposable = new CompositeDisposable;
-        SolutionManager.activate(this._activeEditorOrConfigEditor);
-        this.disposable.add(SolutionManager);
+        this.solutionManager = new SolutionInstanceManager(this._activeEditorOrConfigEditor);
+        this.disposable.add(this.solutionManager);
+        this.disposable.add(makeOpener(this.solutionManager));
+
+        this.disposable.add(this._activeEditor.connect());
+        this.disposable.add(this._activeConfigEditor.connect());
 
         // we are only off if all our solutions are disconncted or erroed.
-        this.disposable.add(SolutionManager.solutionAggregateObserver.state.subscribe(z => this._isOff = _.all(z, x => x.value === DriverState.Disconnected || x.value === DriverState.Error)));
+        this.disposable.add(this.solutionManager.solutionAggregateObserver.state.subscribe(z => this._isOff = _.all(z, x => x.value === DriverState.Disconnected || x.value === DriverState.Error)));
 
         this._editors = OmniManager.createTextEditorObservable(this._supportedExtensions, this.disposable);
         this._configEditors = OmniManager.createTextEditorObservable([".json"], this.disposable);
@@ -154,22 +149,42 @@ class OmniManager implements IDisposable {
                 return Observable.of(<OmniSharp.Models.DiagnosticLocation[]>[]);
             })
             .startWith([])
-            .share();
+            /*.share()*/;
+
+
+        this._activeProject = (() => {
+            const a = this._activeEditorOrConfigEditor
+                .switchMap(editor => this.solutionManager.getSolutionForEditor(editor)
+                    .mergeMap(z => z.model.getProjectForEditor(editor)))
+                .publishReplay(1);
+            this.disposable.add(a.connect());
+            return a;
+        })();
+
+        this._activeFramework = (() => {
+            const a = this._activeEditorOrConfigEditor
+                .switchMap(editor => this.solutionManager.getSolutionForEditor(editor)
+                    .mergeMap(z => z.model.getProjectForEditor(editor)))
+                .switchMap(project => project.observe.activeFramework.map(framework => ({ project, framework })))
+                .publishReplay(1);
+            this.disposable.add(a.connect());
+            return a;
+        })();
     }
 
     public dispose() {
         this.disposable.dispose();
     }
 
-    public connect() { SolutionManager.connect(); }
+    public connect() { this.solutionManager.connect(); }
 
-    public disconnect() { SolutionManager.disconnect(); }
+    public disconnect() { this.solutionManager.disconnect(); }
 
     public toggle() {
-        if (SolutionManager.connected) {
-            SolutionManager.disconnect();
+        if (this.solutionManager.connected) {
+            this.solutionManager.disconnect();
         } else {
-            SolutionManager.connect();
+            this.solutionManager.connect();
         }
     }
 
@@ -242,9 +257,6 @@ class OmniManager implements IDisposable {
             }
         }));
 
-        disposable.add(subject);
-        disposable.add(editorSubject);
-
         return Observable.merge(subject, Observable.defer(() => Observable.from(editors))).delay(50);
     }
     /* tslint:enable:member-ordering */
@@ -255,7 +267,7 @@ class OmniManager implements IDisposable {
      *     one place where `registerConfiguration` could not be replaced.
      */
     public get listener() {
-        return SolutionManager.solutionObserver;
+        return this.solutionManager.solutionObserver;
     }
 
     /**
@@ -263,7 +275,7 @@ class OmniManager implements IDisposable {
      * A good example of this is, for code check errors, to aggregate all errors across all open solutions.
      */
     public get aggregateListener() {
-        return SolutionManager.solutionAggregateObserver;
+        return this.solutionManager.solutionAggregateObserver;
     }
 
     /**
@@ -271,7 +283,7 @@ class OmniManager implements IDisposable {
      * NOTE: This property will not emit additions or removals of solutions.
      */
     public get solutions() {
-        return Observable.defer(() => Observable.from(SolutionManager.activeSolutions));
+        return Observable.defer(() => Observable.from(this.solutionManager.activeSolutions));
     }
 
     /**
@@ -301,13 +313,13 @@ class OmniManager implements IDisposable {
         let result: Observable<T>;
 
         if (editor) {
-            result = SolutionManager.getSolutionForEditor(<Atom.TextEditor>editor)
+            result = this.solutionManager.getSolutionForEditor(<Atom.TextEditor>editor)
                 .filter(z => !!z)
-                .mergeMap(solutionCallback).share();
+                .mergeMap(solutionCallback)/*.share()*/;
         } else {
-            result = SolutionManager.activeSolution.take(1)
+            result = this.solutionManager.activeSolution.take(1)
                 .filter(z => !!z)
-                .mergeMap(solutionCallback).share();
+                .mergeMap(solutionCallback)/*.share()*/;
         }
 
         // Ensure that the underying promise is connected
@@ -317,14 +329,14 @@ class OmniManager implements IDisposable {
     }
 
     public getProject(editor: Atom.TextEditor) {
-        return SolutionManager.getSolutionForEditor(editor)
+        return this.solutionManager.getSolutionForEditor(editor)
             .mergeMap(z => z.model.getProjectForEditor(editor))
             .take(1);
     }
 
     public getSolutionForProject(project: ProjectViewModel<any>) {
         return Observable.of(
-            _(SolutionManager.activeSolutions)
+            _(this.solutionManager.activeSolutions)
                 .filter(solution => _.any(solution.model.projects, p => p.name === project.name))
                 .first()
         );
@@ -334,7 +346,7 @@ class OmniManager implements IDisposable {
      * Allows for views to observe the active model as it changes between editors
      */
     public get activeModel() {
-        return SolutionManager.activeSolution.map(z => z.model);
+        return this.solutionManager.activeSolution.map(z => z.model);
     }
 
     public switchActiveModel(callback: (model: ViewModel, cd: CompositeDisposable) => void): IDisposable {
@@ -342,14 +354,14 @@ class OmniManager implements IDisposable {
     }
 
     public get activeSolution() {
-        return SolutionManager.activeSolution;
+        return this.solutionManager.activeSolution;
     }
 
     public switchActiveSolution(callback: (solution: Solution, cd: CompositeDisposable) => void): IDisposable {
         return disposeOnChange(this.activeSolution, callback, true);
     }
 
-    public get activeEditor() {
+    public get activeEditor(): Observable<Atom.TextEditor> {
         return this._activeEditor;
     }
 
@@ -358,12 +370,12 @@ class OmniManager implements IDisposable {
     }
 
     public whenEditorConnected(editor: Atom.TextEditor) {
-        return SolutionManager.getSolutionForEditor(editor)
+        return this.solutionManager.getSolutionForEditor(editor)
             .mergeMap(solution => solution.whenConnected())
             .map(z => editor);
     }
 
-    public get activeConfigEditor() {
+    public get activeConfigEditor(): Observable<Atom.TextEditor> {
         return this._activeConfigEditor;
     }
 
@@ -404,11 +416,14 @@ class OmniManager implements IDisposable {
     }
 
     public registerConfiguration(callback: (solution: Solution) => void) {
-        SolutionManager.registerConfiguration(callback);
+        this.solutionManager.registerConfiguration(callback);
     }
 
     private get _kick_in_the_pants_() {
-        return SolutionManager._kick_in_the_pants_;
+        return OmniManager._kick_in_the_pants_;
+    }
+    private set _kick_in_the_pants_(value) {
+        OmniManager._kick_in_the_pants_ = value;
     }
 
     private _supportedExtensions = [".cs", ".csx", /*".cake"*/];
@@ -440,15 +455,15 @@ class OmniManager implements IDisposable {
         }
         return this._packageDir;
     }
-}
 
-/* tslint:disable:variable-name */
-export const Omni = new OmniManager;
-/* tslint:enable:variable-name */
+    public getSolutionForEditor(editor: Atom.TextEditor) {
+        return this.solutionManager.getSolutionForEditor(editor);
+    }
+}
 
 import {TextEditor} from "atom";
 const metadataUri = "omnisharp://metadata/";
-function makeOpener(): IDisposable {
+function makeOpener(solutionManager: SolutionInstanceManager): IDisposable {
     function createEditorView(assemblyName: string, typeName: string) {
         function issueRequest(solution: Solution) {
             return solution.request<any, { Source: string; SourceName: string }>("metadata", { AssemblyName: assemblyName, TypeName: typeName })
@@ -470,7 +485,7 @@ function makeOpener(): IDisposable {
             return editor;
         }
 
-        return SolutionManager.activeSolution
+        return solutionManager.activeSolution
             .take(1)
             .mergeMap(issueRequest)
             .map(setupEditor)
@@ -485,8 +500,6 @@ function makeOpener(): IDisposable {
         }
     });
 }
-
-makeOpener();
 
 function disposeOnChange<T>(target: Observable<T>, callback: (target: T, cd: CompositeDisposable) => void, activateOnTruthy = false): IDisposable {
     const outerCd = new CompositeDisposable();

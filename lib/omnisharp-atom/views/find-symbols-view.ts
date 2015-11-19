@@ -1,5 +1,5 @@
 import {OmniSelectListView} from "../services/omni-select-list-view";
-import {Omni} from "../../omni-sharp-server/omni";
+
 
 export class FindSymbolsView extends OmniSelectListView {
 
@@ -28,12 +28,12 @@ export class FindSymbolsView extends OmniSelectListView {
         this.cancel();
         this.hide();
 
-        Omni.navigateTo(item);
+        omni.navigateTo(item);
         return null;
     }
 
     public onFilter(filter: string): void {
-        Omni.request(solution =>  solution.findsymbols({ Filter: filter }));
+        omni.request(solution =>  solution.findsymbols({ Filter: filter }));
     }
 
     public getMinQueryLength() {

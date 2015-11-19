@@ -1,4 +1,5 @@
 import {OmniSharpAtom} from "../../omnisharp.ts";
+import {OmniManager} from "../../omni-sharp-server/omni";
 import {CompositeDisposable} from "../../Disposable";
 import {Observable} from "@reactivex/rxjs";
 import {each, endsWith, filter} from "lodash";
@@ -61,7 +62,7 @@ class GeneratorAspnet implements OmniSharpAtom.IFeature {
         list(prefix?: string, path?: string, options?: any): Promise<{ displayName: string; name: string; resolved: string; }[]>
     };
 
-    public activate() {
+    public activate(omni: OmniManager) {
         this.disposable = new CompositeDisposable();
 
         this.disposable.add(atom.commands.add("atom-workspace", "omnisharp-atom:new-project", () => this.newProject()));

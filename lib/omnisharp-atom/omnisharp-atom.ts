@@ -7,16 +7,18 @@ import {fromNodeCallback} from "../fromCallback";
 import {OmniSharpAtom as OmniAtom} from "../omnisharp.ts";
 
 // TODO: Remove these at some point to stream line startup.
-import {Omni} from "../omni-sharp-server/omni";
+import {OmniManager} from "../omni-sharp-server/omni";
 const win32 = process.platform === "win32";
 
 class OmniSharpAtom {
     private disposable: CompositeDisposable;
+    public omni: OmniManager;
     // Internal: Used by unit testing to make sure the plugin is completely activated.
     private _started: Subject<boolean>;
     private _activated: Subject<boolean>;
 
     public activate(state: any) {
+        this.omni = new OmniManager();
         this.disposable = new CompositeDisposable;
         this._started = new Subject<boolean>();
         this._activated = new Subject<boolean>();
@@ -34,20 +36,20 @@ class OmniSharpAtom {
         require("atom-package-deps").install("omnisharp-atom")
             .then(() => {
                 console.info("Activating omnisharp-atom solution tracking...");
-                Omni.activate();
-                this.disposable.add(Omni);
+                this.omni.activate();
+                this.disposable.add(this.omni);
 
                 this._started.next(true);
                 this._started.complete();
             })
             .then(() => this.loadFeatures(this.getFeatures("atom").delay(2000)).toPromise())
             .then(() => {
-                let startingObservable = Omni.activeSolution
+                let startingObservable = this.omni.activeSolution
                     .filter(z => !!z)
                     .take(1);
 
                 /* tslint:disable:no-string-literal */
-                if (Omni["_kick_in_the_pants_"]) {
+                if (this.omni["_kick_in_the_pants_"]) {
                     startingObservable = Observable.of(null);
                 }
                 /* tslint:enable:no-string-literal */
@@ -76,7 +78,7 @@ class OmniSharpAtom {
 
         console.info(`Getting features for "${folder}"...`);
 
-        const packageDir = Omni.packageDir;
+        const packageDir = this.omni.packageDir;
         const featureDir = `${packageDir}/omnisharp-atom/lib/omnisharp-atom/${folder}`;
 
         function loadFeature(file: string) {
@@ -179,7 +181,7 @@ class OmniSharpAtom {
                     }
 
                     console.info(`Activating feature "${key}"...`);
-                    value.activate();
+                    value.activate(this.omni);
 
                     /* tslint:disable:no-string-literal */
                     if (_.isFunction(value["attach"])) {
@@ -203,7 +205,7 @@ class OmniSharpAtom {
 
             this.disposable.add(atom.commands.add("atom-workspace", `omnisharp-feature:toggle-${_.kebabCase(key)}`, () => atom.config.set(configKey, !atom.config.get(configKey))));
         } else {
-            value.activate();
+            value.activate(this.omni);
 
             /* tslint:disable:no-string-literal */
             if (_.isFunction(value["attach"])) {
@@ -230,13 +232,13 @@ class OmniSharpAtom {
             return; //short out, if setting to not auto start is enabled
         }
 
-        if (Omni.isValidGrammar(grammar)) {
-            if (Omni.isOff) {
+        if (this.omni.isValidGrammar(grammar)) {
+            if (this.omni.isOff) {
                 this.toggle();
             }
         } else if (grammar.name === "JSON") {
             if (path.basename(editor.getPath()) === "project.json") {
-                if (Omni.isOff) {
+                if (this.omni.isOff) {
                     this.toggle();
                 }
             }
@@ -244,10 +246,10 @@ class OmniSharpAtom {
     }
 
     public toggle() {
-        if (Omni.isOff) {
-            Omni.connect();
-        } else if (Omni.isOn) {
-            Omni.disconnect();
+        if (this.omni.isOff) {
+            this.omni.connect();
+        } else if (this.omni.isOn) {
+            this.omni.disconnect();
         }
     }
 
@@ -271,18 +273,26 @@ class OmniSharpAtom {
 
     /* tslint:disable:variable-name */
     public provideAutocomplete() {
-        const {CompletionProvider} = require("./services/completion-provider");
+        const {CompletionProvider, setup} = require("./services/completion-provider");
+        setup(this.omni);
         this.disposable.add(CompletionProvider);
         return CompletionProvider;
     }
 
     public provideLinter() {
         const LinterProvider = require("./services/linter-provider");
+        LinterProvider.setup(this.omni);
         return LinterProvider.provider;
     }
 
     public provideProjectJson() {
-        return require("./services/project-provider").concat(require("./services/framework-provider"));
+        const project = require("./services/project-provider");
+        project.setup(this.omni);
+
+        const framework = require("./services/framework-provider");
+        framework.setup(this.omni);
+
+        return project.providers.concat(framework.providers);
     }
 
     public consumeLinter(linter: any) {
@@ -300,7 +310,7 @@ class OmniSharpAtom {
     /* tslint:enable:variable-name */
 
     private configureKeybindings() {
-        const omnisharpFileNew = Omni.packageDir + "/omnisharp-atom/keymaps/omnisharp-file-new.cson";
+        const omnisharpFileNew = this.omni.packageDir + "/omnisharp-atom/keymaps/omnisharp-file-new.cson";
         this.disposable.add(atom.config.observe("omnisharp-atom.enableAdvancedFileNew", (enabled) => {
             if (enabled) {
                 atom.keymaps.loadKeymap(omnisharpFileNew);
@@ -310,7 +320,7 @@ class OmniSharpAtom {
         }));
 
         let disposable: Disposable;
-        const omnisharpAdvancedFileNew = Omni.packageDir + "/omnisharp-atom/keymaps/omnisharp-advanced-file-new.cson";
+        const omnisharpAdvancedFileNew = this.omni.packageDir + "/omnisharp-atom/keymaps/omnisharp-advanced-file-new.cson";
         this.disposable.add(atom.config.observe("omnisharp-atom.useAdvancedFileNew", (enabled) => {
             if (enabled) {
                 atom.keymaps.loadKeymap(omnisharpAdvancedFileNew);

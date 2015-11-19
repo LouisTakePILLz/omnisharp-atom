@@ -1,4 +1,5 @@
 import {OmniSharpAtom} from "../../omnisharp.ts";
+import {OmniManager} from "../../omni-sharp-server/omni";
 import {CompositeDisposable, IDisposable} from "../../Disposable";
 import * as React from "react";
 import {dock} from "../atom/dock";
@@ -6,7 +7,7 @@ import {dock} from "../atom/dock";
 class SettingsButton implements OmniSharpAtom.IFeature {
     private disposable: CompositeDisposable;
 
-    public activate() {
+    public activate(omni: OmniManager) {
         this.disposable = new CompositeDisposable();
         let tooltip: IDisposable;
         const button = React.DOM.a({

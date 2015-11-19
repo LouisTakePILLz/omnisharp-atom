@@ -4,7 +4,7 @@ import {CompositeDisposable} from "../../lib/Disposable";
 import {setupFeature} from "../test-helpers";
 
 describe("Run Tests", () => {
-    setupFeature(["features/run-tests"]);
+    const omniCb = setupFeature(["features/run-tests"]);
 
     it("adds commands", () => {
         const disposable = new CompositeDisposable();

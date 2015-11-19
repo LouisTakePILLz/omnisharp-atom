@@ -2,20 +2,22 @@ import {OmniSharp, OmniSharpAtom} from "../../omnisharp.ts";
 import * as _ from "lodash";
 import {CompositeDisposable, IDisposable} from "../../Disposable";
 import {Subject, Observable, Scheduler} from "@reactivex/rxjs";
-import {Omni} from "../../omni-sharp-server/omni";
+import {OmniManager} from "../../omni-sharp-server/omni";
 import * as SpacePen from "atom-space-pen-views";
 import {applyAllChanges} from "../services/apply-changes";
 import {codeActionsView} from "../views/code-actions-view";
 
 class CodeAction implements OmniSharpAtom.IFeature {
     private disposable: CompositeDisposable;
+    private omni: OmniManager;
 
     private view: SpacePen.SelectListView;
 
-    public activate() {
+    public activate(omni: OmniManager) {
         this.disposable = new CompositeDisposable();
+        this.omni = omni;
 
-        this.disposable.add(Omni.addTextEditorCommand("omnisharp-atom:get-code-actions", () => {
+        this.disposable.add(omni.addTextEditorCommand("omnisharp-atom:get-code-actions", () => {
             //store the editor that this was triggered by.
             const editor = atom.workspace.getActiveTextEditor();
             this.getCodeActionsRequest(editor)
@@ -33,9 +35,9 @@ class CodeAction implements OmniSharpAtom.IFeature {
                 });
         }));
 
-        this.disposable.add(Omni.switchActiveEditor((editor, cd) => {
+        this.disposable.add(omni.switchActiveEditor((editor, cd) => {
             let word: string, marker: Atom.Marker, subscription: IDisposable;
-            cd.add(Omni.listener.getcodeactions
+            cd.add(omni.listener.getcodeactions
                 .filter(z => z.request.FileName === editor.getPath())
                 .filter(ctx => ctx.response.CodeActions.length > 0)
                 .subscribe(({request}) => {
@@ -110,7 +112,7 @@ class CodeAction implements OmniSharpAtom.IFeature {
         if (!editor || editor.isDestroyed()) return Observable.empty<{ request: OmniSharp.Models.V2.GetCodeActionsRequest; response: OmniSharp.Models.V2.GetCodeActionsResponse }>();
 
         const request = this.getRequest(editor);
-        return Omni.request(editor, solution => solution.getcodeactions(request))
+        return this.omni.request(editor, solution => solution.getcodeactions(request))
             .map(response => ({ request, response }));
     }
 
@@ -119,7 +121,7 @@ class CodeAction implements OmniSharpAtom.IFeature {
 
         const request = this.getRequest(editor, codeAction);
         request.Selection = getRequest.Selection;
-        return Omni.request(editor, solution => solution.runcodeaction(request));
+        return this.omni.request(editor, solution => solution.runcodeaction(request));
     }
 
     private getRequest(editor: Atom.TextEditor): OmniSharp.Models.V2.GetCodeActionsRequest;

@@ -1,8 +1,10 @@
 import {OmniSharp} from "../../omnisharp.ts";
-import {Omni} from "../../omni-sharp-server/omni";
+import {OmniManager} from "../../omni-sharp-server/omni";
 import * as _ from "lodash";
 import {CompositeDisposable} from "../../Disposable";
 const filter = require("fuzzaldrin").filter;
+
+let _omni: OmniManager;
 
 interface RequestOptions {
     editor: Atom.TextEditor;
@@ -151,7 +153,7 @@ function getSuggestions(options: RequestOptions): Promise<Suggestion[]> {
     if (search === ".")
         search = "";
 
-    if (!results) results = Omni.request(solution => solution.autocomplete(_.clone(autoCompleteOptions))).toPromise();
+    if (!results) results = _omni.request(solution => solution.autocomplete(_.clone(autoCompleteOptions))).toPromise();
 
     let p = results;
     if (search)
@@ -171,10 +173,14 @@ function dispose() {
     _disposable = null;
     _initialized = false;
 }
+
+export function setup(omni: OmniManager) {
+    _omni = omni;
+}
 /* tslint:disable:variable-name */
 export const CompletionProvider = {
-    get selector() { return Omni.grammars.map((x: any) => `.${x.scopeName}`).join(", "); },
-    get disableForSelector() { return Omni.grammars.map((x: any) => `.${x.scopeName} .comment`).join(", "); },
+    get selector() { return _omni.grammars.map((x: any) => `.${x.scopeName}`).join(", "); },
+    get disableForSelector() { return _omni.grammars.map((x: any) => `.${x.scopeName} .comment`).join(", "); },
     inclusionPriority: 1,
     suggestionPriority: 10,
     excludeLowerPriority: true,

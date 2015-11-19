@@ -1,23 +1,23 @@
 import {OmniSharpAtom} from "../../omnisharp.ts";
 import {CompositeDisposable} from "../../Disposable";
 import {delay} from "lodash";
-import {Omni} from "../../omni-sharp-server/omni";
+import {OmniManager} from "../../omni-sharp-server/omni";
 
 class Intellisense implements OmniSharpAtom.IFeature {
     private disposable: CompositeDisposable;
 
-    public activate() {
+    public activate(omni: OmniManager) {
         this.disposable = new CompositeDisposable();
-        this.disposable.add(Omni.addTextEditorCommand("omnisharp-atom:intellisense-dot",
+        this.disposable.add(omni.addTextEditorCommand("omnisharp-atom:intellisense-dot",
             (event) => {
                 this.complete(event, ".");
                 delay(() => atom.commands.dispatch(atom.views.getView(atom.workspace.getActiveTextEditor()), "autocomplete-plus:activate"), 100);
             }));
 
-        this.disposable.add(Omni.addTextEditorCommand("omnisharp-atom:intellisense-space",
+        this.disposable.add(omni.addTextEditorCommand("omnisharp-atom:intellisense-space",
             (event) => this.complete(event, " ")));
 
-        this.disposable.add(Omni.addTextEditorCommand("omnisharp-atom:intellisense-semicolon",
+        this.disposable.add(omni.addTextEditorCommand("omnisharp-atom:intellisense-semicolon",
             (event) => this.complete(event, ";")));
     }
 

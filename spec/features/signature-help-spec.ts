@@ -4,7 +4,7 @@ import {CompositeDisposable} from "../../lib/Disposable";
 import {setupFeature} from "../test-helpers";
 
 describe("Signature Help", () => {
-    setupFeature(["features/signature-help"]);
+    const omniCb = setupFeature(["features/signature-help"]);
 
     it("adds commands", () => {
         const disposable = new CompositeDisposable();

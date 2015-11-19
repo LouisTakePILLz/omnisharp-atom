@@ -1,7 +1,7 @@
 import {OmniSharp, OmniSharpAtom} from "../../omnisharp.ts";
 import {CompositeDisposable, Disposable} from "../../Disposable";
 import {Observable, Subject} from "@reactivex/rxjs";
-import {Omni} from "../../omni-sharp-server/omni";
+import {OmniManager} from "../../omni-sharp-server/omni";
 import {dock} from "../atom/dock";
 import {TestResultsWindow} from "../views/test-results-window";
 import * as childProcess from "child_process";
@@ -14,6 +14,7 @@ enum TestCommandType {
 }
 
 class RunTests implements OmniSharpAtom.IFeature {
+    private omni: OmniManager;
     private disposable: CompositeDisposable;
     private window: CompositeDisposable;
     public testResults: OmniSharpAtom.OutputMessage[] = [];
@@ -24,32 +25,33 @@ class RunTests implements OmniSharpAtom.IFeature {
         output: Observable<OmniSharpAtom.OutputMessage[]>;
     };
 
-    public activate() {
+    public activate(omni: OmniManager) {
         this.disposable = new CompositeDisposable();
+        this.omni = omni;
 
         const output = Observable.from(this.results);
         this.observe = {
             get output() { return output; }
         };
 
-        this.disposable.add(Omni.listener.gettestcontext.subscribe((data) => {
+        this.disposable.add(omni.listener.gettestcontext.subscribe((data) => {
             this.ensureWindowIsCreated();
             this.executeTests(data.response);
         }));
 
-        this.disposable.add(Omni.addTextEditorCommand("omnisharp-atom:run-all-tests", () => {
+        this.disposable.add(omni.addTextEditorCommand("omnisharp-atom:run-all-tests", () => {
             this.makeRequest(TestCommandType.All);
         }));
 
-        this.disposable.add(Omni.addTextEditorCommand("omnisharp-atom:run-fixture-tests", () => {
+        this.disposable.add(omni.addTextEditorCommand("omnisharp-atom:run-fixture-tests", () => {
             this.makeRequest(TestCommandType.Fixture);
         }));
 
-        this.disposable.add(Omni.addTextEditorCommand("omnisharp-atom:run-single-test", () => {
+        this.disposable.add(omni.addTextEditorCommand("omnisharp-atom:run-single-test", () => {
             this.makeRequest(TestCommandType.Single);
         }));
 
-        this.disposable.add(Omni.addTextEditorCommand("omnisharp-atom:run-last-test", () => {
+        this.disposable.add(omni.addTextEditorCommand("omnisharp-atom:run-last-test", () => {
             this.executeTests(this.lastRun);
         }));
     }
@@ -59,7 +61,7 @@ class RunTests implements OmniSharpAtom.IFeature {
     }
 
     private makeRequest(type: TestCommandType) {
-        Omni.request(solution => solution.gettestcontext({ Type: <any>type }));
+        this.omni.request(solution => solution.gettestcontext({ Type: <any>type }));
     }
 
     private executeTests(response: OmniSharp.Models.GetTestCommandResponse) {

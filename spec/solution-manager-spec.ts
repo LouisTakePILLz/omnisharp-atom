@@ -1,12 +1,11 @@
 /// <reference path="tsd.d.ts" />
 import {expect} from "chai";
-import {SolutionManager} from "../lib/omni-sharp-server/solution-manager";
 import {setupFeature} from "./test-helpers";
 //import {DriverState} from "omnisharp-client";
 import {GenericSelectListView} from "../lib/omnisharp-atom/views/generic-list-view";
 
 describe("Solution Manager", () => {
-    setupFeature([], false);
+    const omniCb = setupFeature([], false);
 
     /*it("Works with single cs files", function(done) {
         openEditor("single-cs/class.cs")
@@ -19,7 +18,7 @@ describe("Solution Manager", () => {
         atom.workspace.open("two-solution/class.cs")
             .then(editor => {
                 checkPanel();
-                return SolutionManager.getSolutionForEditor(editor).toPromise();
+                return omniCb().getSolutionForEditor(editor).toPromise();
             })
             .then(() => done());
 

@@ -1,4 +1,5 @@
 import {OmniSharpAtom} from "../../omnisharp.ts";
+import {OmniManager} from "../../omni-sharp-server/omni";
 import {CompositeDisposable, SingleAssignmentDisposable, Disposable, IDisposable} from "../../Disposable";
 import * as _ from "lodash";
 import {DockWindow, DockPane, DockButton, IDockWindowProps, DocPaneOptions, DocButtonOptions} from "../views/dock-window";
@@ -11,7 +12,7 @@ class Dock implements OmniSharpAtom.IAtomFeature {
     private _panes: DockPane<any, any>[] = [];
     private _buttons: DockButton[] = [];
 
-    public activate() {
+    public activate(omni: OmniManager) {
         this.disposable = new CompositeDisposable();
 
         this.disposable.add(atom.commands.add("atom-workspace", "omnisharp-atom:toggle-dock", () => this.toggle()));

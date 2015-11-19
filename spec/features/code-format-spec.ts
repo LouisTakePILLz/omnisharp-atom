@@ -1,12 +1,11 @@
 /// <reference path="../tsd.d.ts" />
 import {expect} from "chai";
-import {Omni} from "../../lib/omni-sharp-server/omni";
 import {CompositeDisposable} from "../../lib/Disposable";
 import {setupFeature, restoreBuffers} from "../test-helpers";
 import {codeFormat} from "../../lib/omnisharp-atom/features/code-format";
 
 describe("Code Format", () => {
-    setupFeature(["features/code-format"]);
+    const omniCb = setupFeature(["features/code-format"]);
 
     it("adds commands", () => {
         const disposable = new CompositeDisposable();
@@ -29,7 +28,7 @@ describe("Code Format", () => {
             .then((editor) => {
                 codeFormat.format(editor);
 
-                return Omni.listener.formatRange
+                return omniCb().listener.formatRange
                     .take(1)
                     .delay(400)
                     .map(({request, response}) => ({editor, request, response}))

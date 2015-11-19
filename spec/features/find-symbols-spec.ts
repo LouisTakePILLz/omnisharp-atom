@@ -4,7 +4,7 @@ import {CompositeDisposable} from "../../lib/Disposable";
 import {setupFeature} from "../test-helpers";
 
 describe("Find Symbols", () => {
-    setupFeature(["features/find-symbols"]);
+    const omniCb = setupFeature(["features/find-symbols"]);
 
     it("adds commands", () => {
         const disposable = new CompositeDisposable();

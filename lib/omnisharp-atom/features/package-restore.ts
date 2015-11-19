@@ -1,15 +1,15 @@
 import {OmniSharpAtom} from "../../omnisharp.ts";
 import {CompositeDisposable} from "../../Disposable";
-import {Omni} from "../../omni-sharp-server/omni";
+import {OmniManager} from "../../omni-sharp-server/omni";
 
 class PackageRestore implements OmniSharpAtom.IFeature {
     private disposable: CompositeDisposable;
 
-    public activate() {
+    public activate(omni: OmniManager) {
         this.disposable = new CompositeDisposable();
-        this.disposable.add(Omni.eachConfigEditor((editor, cd) => {
+        this.disposable.add(omni.eachConfigEditor((editor, cd) => {
             cd.add(editor.getBuffer().onDidSave(() => {
-                Omni.request(solution => solution.filesChanged([{ FileName: editor.getPath() }]));
+                omni.request(solution => solution.filesChanged([{ FileName: editor.getPath() }]));
             }));
         }));
     }

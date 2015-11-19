@@ -1,12 +1,13 @@
 import {OmniSharp, OmniSharpAtom} from "../../omnisharp.ts";
 import {CompositeDisposable, Disposable} from "../../Disposable";
 import {Observable, Subject} from "@reactivex/rxjs";
-import {Omni} from "../../omni-sharp-server/omni";
+import {OmniManager} from "../../omni-sharp-server/omni";
 import {dock} from "../atom/dock";
 import {FindWindow} from "../views/find-pane-view";
 
 class FindUsages implements OmniSharpAtom.IFeature {
     private disposable: CompositeDisposable;
+    private omni: OmniManager;
     private window: CompositeDisposable;
     public selectedIndex: number = 0;
     private scrollTop: number = 0;
@@ -23,19 +24,20 @@ class FindUsages implements OmniSharpAtom.IFeature {
         selected: Observable<boolean>;
     };
 
-    public activate() {
+    public activate(omni: OmniManager) {
         this.disposable = new CompositeDisposable();
+        this.omni = omni;
 
         const observable = Observable.merge(
             // Listen to find usages
-            Omni.listener.findusages,
+            omni.listener.findusages,
             // We also want find implementations, where we found more than one
-            Omni.listener.findimplementations
+            omni.listener.findimplementations
                 .filter(z => z.response.QuickFixes && z.response.QuickFixes.length > 1)
         )
             // For the UI we only need the qucik fixes.
             .map(z => <OmniSharp.Models.DiagnosticLocation[]>z.response.QuickFixes || [])
-            .share();
+            /*.share()*/;
 
         const usages = this._usagesSubject = new Subject<boolean>();
         const selected = this._selectedSubject = new Subject<boolean>();
@@ -44,18 +46,18 @@ class FindUsages implements OmniSharpAtom.IFeature {
             find: observable,
             // NOTE: We cannot do the same for find implementations because find implementation
             //      just goes to the item if only one comes back.
-            open: Omni.listener.requests.filter(z => !z.silent && z.command === "findusages").map(() => true),
-            reset: Omni.listener.requests.filter(z => !z.silent && (z.command === "findimplementations" || z.command === "findusages")).map(() => true),
+            open: omni.listener.requests.filter(z => !z.silent && z.command === "findusages").map(() => true),
+            reset: omni.listener.requests.filter(z => !z.silent && (z.command === "findimplementations" || z.command === "findusages")).map(() => true),
             usages: Observable.from(usages),
             selected: Observable.from(selected),
         };
 
-        this.disposable.add(Omni.addTextEditorCommand("omnisharp-atom:find-usages", () => {
-            Omni.request(solution => solution.findusages({}));
+        this.disposable.add(omni.addTextEditorCommand("omnisharp-atom:find-usages", () => {
+            omni.request(solution => solution.findusages({}));
         }));
 
-        this.disposable.add(Omni.addTextEditorCommand("omnisharp-atom:go-to-implementation", () => {
-            Omni.request(solution => solution.findimplementations({}));
+        this.disposable.add(omni.addTextEditorCommand("omnisharp-atom:go-to-implementation", () => {
+            omni.request(solution => solution.findimplementations({}));
         }));
 
         this.disposable.add(atom.commands.add("atom-workspace", "omnisharp-atom:next-usage", () => {
@@ -64,7 +66,7 @@ class FindUsages implements OmniSharpAtom.IFeature {
 
         this.disposable.add(atom.commands.add("atom-workspace", "omnisharp-atom:go-to-usage", () => {
             if (this.usages[this.selectedIndex])
-                Omni.navigateTo(this.usages[this.selectedIndex]);
+                omni.navigateTo(this.usages[this.selectedIndex]);
         }));
 
         this.disposable.add(atom.commands.add("atom-workspace", "omnisharp-atom:previous-usage", () => {
@@ -74,13 +76,13 @@ class FindUsages implements OmniSharpAtom.IFeature {
         this.disposable.add(atom.commands.add("atom-workspace", "omnisharp-atom:go-to-next-usage", () => {
             this.updateSelectedItem(this.selectedIndex + 1);
             if (this.usages[this.selectedIndex])
-                Omni.navigateTo(this.usages[this.selectedIndex]);
+                omni.navigateTo(this.usages[this.selectedIndex]);
         }));
 
         this.disposable.add(atom.commands.add("atom-workspace", "omnisharp-atom:go-to-previous-usage", () => {
             this.updateSelectedItem(this.selectedIndex - 1);
             if (this.usages[this.selectedIndex])
-                Omni.navigateTo(this.usages[this.selectedIndex]);
+                omni.navigateTo(this.usages[this.selectedIndex]);
         }));
 
         this.disposable.add(this.observe.find.subscribe(s => {
@@ -102,9 +104,9 @@ class FindUsages implements OmniSharpAtom.IFeature {
         }));
 
 
-        this.disposable.add(Omni.listener.findimplementations.subscribe((data) => {
+        this.disposable.add(omni.listener.findimplementations.subscribe((data) => {
             if (data.response.QuickFixes.length === 1) {
-                Omni.navigateTo(data.response.QuickFixes[0]);
+                omni.navigateTo(data.response.QuickFixes[0]);
             }
         }));
     }
@@ -145,7 +147,7 @@ class FindUsages implements OmniSharpAtom.IFeature {
     }
 
     public navigateToSelectedItem() {
-        Omni.navigateTo(this.usages[this.selectedIndex]);
+        this.omni.navigateTo(this.usages[this.selectedIndex]);
     }
 
     public required = true;

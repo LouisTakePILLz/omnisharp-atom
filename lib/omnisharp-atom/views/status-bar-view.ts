@@ -1,7 +1,7 @@
 import {CompositeDisposable, IDisposable} from "../../Disposable";
 import {Observable} from "@reactivex/rxjs";
 import * as _ from "lodash";
-import {Omni} from "../../omni-sharp-server/omni";
+
 import {OmnisharpClientStatus} from "omnisharp-client";
 import {server} from "../atom/server-information";
 import {solutionInformation} from "../atom/solution-information";
@@ -35,7 +35,7 @@ interface StatusBarState {
 }
 
 function updateState(self: any, state: any) {
-    _.each(Omni.viewModelStatefulProperties, x => {
+    _.each(omni.viewModelStatefulProperties, x => {
         if (_.has(state, x)) {
             self[x] = state[x];
         }
@@ -290,7 +290,7 @@ export class StatusBarElement extends HTMLElement implements WebComponent, IDisp
     }
 
     public attachedCallback() {
-        this._disposable.add(Omni.diagnostics.subscribe(diagnostics => {
+        this._disposable.add(omni.diagnostics.subscribe(diagnostics => {
             const counts = _.countBy(diagnostics, quickFix => quickFix.LogLevel);
             /* tslint:disable:no-string-literal */
             this._diagnostics.updateState({
@@ -300,7 +300,7 @@ export class StatusBarElement extends HTMLElement implements WebComponent, IDisp
             /* tslint:enable:no-string-literal */
         }));
 
-        this._disposable.add(Observable.merge(Omni.activeModel, Omni.activeModel.mergeMap(x => x.observe.state))
+        this._disposable.add(Observable.merge(omni.activeModel, omni.activeModel.mergeMap(x => x.observe.state))
             .subscribe(model => {
                 this._flame.updateState(model);
                 updateState(this._state, model);
@@ -321,7 +321,7 @@ export class StatusBarElement extends HTMLElement implements WebComponent, IDisp
                 this._projectCount.updateSolutionNumber(solutionNumber);
             }));
 
-        this._disposable.add(Omni.activeEditorOrConfigEditor.subscribe(editor => {
+        this._disposable.add(omni.activeEditorOrConfigEditor.subscribe(editor => {
             this._updateVisible(!!editor);
         }));
 

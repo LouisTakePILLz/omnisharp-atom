@@ -73,20 +73,20 @@ export class ViewModel implements VMViewState, IDisposable {
         const status = this._setupStatus(_solution);
         const output = this.output;
 
-        const _projectAddedStream = this._projectAddedStream.share();
-        const _projectRemovedStream = this._projectRemovedStream.share();
-        const _projectChangedStream = this._projectChangedStream.share();
+        const _projectAddedStream = this._projectAddedStream/*.share()*/;
+        const _projectRemovedStream = this._projectRemovedStream/*.share()*/;
+        const _projectChangedStream = this._projectChangedStream/*.share()*/;
         const projectsObservable = Observable.merge(_projectAddedStream, _projectRemovedStream, _projectChangedStream)
             .debounceTime(200)
             .map(z => this.projects)
-            .share();
+            /*.share()*/;
 
         const outputObservable = _solution.logs
             .window(_solution.logs.throttleTime(100).delay(100))
             .mergeMap(x => x.startWith(null).last())
             .map(() => output);
 
-        const state = this._stateStream.share();
+        const state = this._stateStream/*.share()*/;
 
         this.observe = {
             get codecheck() { return codecheck; },
@@ -265,8 +265,9 @@ export class ViewModel implements VMViewState, IDisposable {
                 }))
             .map(data => _.sortBy(data, quickFix => quickFix.LogLevel))
             .startWith([])
-            .publishReplay(1)
-            .refCount();
+            .publishReplay(1);
+
+        this._disposable.add(codecheck.connect());
 
         this._disposable.add(codecheck.subscribe((data) => this.diagnostics = data));
         return codecheck;
@@ -275,7 +276,7 @@ export class ViewModel implements VMViewState, IDisposable {
     private _setupStatus(_solution: Solution) {
         const status = _solution.status
             .startWith(<any>{})
-            .share();
+            /*.share()*/;
 
         return status;
     }

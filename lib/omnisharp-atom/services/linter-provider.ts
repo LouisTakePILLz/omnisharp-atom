@@ -1,5 +1,5 @@
 import {OmniSharp} from "../../omnisharp.ts";
-import {Omni} from "../../omni-sharp-server/omni";
+import {OmniManager} from "../../omni-sharp-server/omni";
 /*  tslint:disable:variable-name */
 const Range = require("atom").Range;
 /*  tslint:enable:variable-name */
@@ -7,6 +7,8 @@ import * as _ from "lodash";
 import {CompositeDisposable} from "../../Disposable";
 import {Observable} from "@reactivex/rxjs";
 import {codeCheck} from "../features/code-check";
+
+let _omni: OmniManager;
 
 interface LinterError {
     type: string; // "error" | "warning"
@@ -49,7 +51,7 @@ function mapValues(editor: Atom.TextEditor, error: OmniSharp.Models.DiagnosticLo
 
     return {
         type: level,
-        text: `${error.Text} [${Omni.getFrameworks(error.Projects) }] `,
+        text: `${error.Text} [${_omni.getFrameworks(error.Projects) }] `,
         filePath: editor.getPath(),
         line: line + 1,
         col: column + 1,
@@ -82,12 +84,12 @@ export function init() {
             disposable.add(cd);
 
             // show linter buttons
-            cd.add(Omni.activeEditor
+            cd.add(_omni.activeEditor
                 .filter(z => !z)
                 .subscribe(showLinter));
 
             // hide linter buttons
-            cd.add(Omni.activeEditor
+            cd.add(_omni.activeEditor
                 .filter(z => !!z)
                 .subscribe(hideLinter));
         } else {
@@ -102,17 +104,21 @@ export function init() {
     return disposable;
 }
 
+export function setup(omni: OmniManager) {
+    _omni = omni;
+}
+
 export const provider = [
     {
-        get grammarScopes() { return Omni.grammars.map((x: any) => x.scopeName); },
+        get grammarScopes() { return _omni.grammars.map((x: any) => x.scopeName); },
         scope: "file",
         lintOnFly: true,
         lint: (editor: Atom.TextEditor) => {
-            if (!Omni.isValidGrammar(editor.getGrammar())) return Promise.resolve([]);
+            if (!_omni.isValidGrammar(editor.getGrammar())) return Promise.resolve([]);
 
             codeCheck.doCodeCheck(editor);
             const path = editor.getPath();
-            return Omni.diagnostics
+            return _omni.diagnostics
                 .take(1)
                 .mergeMap(x => x)
                 .filter(z => z.FileName === path)
@@ -122,13 +128,13 @@ export const provider = [
                 .toPromise();
         }
     }, {
-        get grammarScopes() { return Omni.grammars.map((x: any) => x.scopeName); },
+        get grammarScopes() { return _omni.grammars.map((x: any) => x.scopeName); },
         scope: "project",
         lintOnFly: false,
         lint: (editor: Atom.TextEditor) => {
-            if (!Omni.isValidGrammar(editor.getGrammar())) return Promise.resolve([]);
+            if (!_omni.isValidGrammar(editor.getGrammar())) return Promise.resolve([]);
 
-            return Omni.activeModel
+            return _omni.activeModel
                 .mergeMap(x => Observable.from(x.diagnostics))
                 .filter(z => z.LogLevel !== "Hidden")
                 .map(error => mapValues(editor, error))

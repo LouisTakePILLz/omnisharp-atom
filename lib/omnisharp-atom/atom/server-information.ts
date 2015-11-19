@@ -1,7 +1,7 @@
 import {OmniSharpAtom} from "../../omnisharp.ts";
 import {CompositeDisposable} from "../../Disposable";
 import {Observable} from "@reactivex/rxjs";
-import {Omni} from "../../omni-sharp-server/omni";
+import {OmniManager} from "../../omni-sharp-server/omni";
 import {OmnisharpClientStatus} from "omnisharp-client";
 import {dock} from "../atom/dock";
 import {OutputWindow} from "../views/omni-output-pane-view";
@@ -9,6 +9,7 @@ import {ViewModel} from "../../omni-sharp-server/view-model";
 
 class ServerInformation implements OmniSharpAtom.IFeature {
     private disposable: CompositeDisposable;
+    private omni: OmniManager;
     public observe: {
         status: Observable<OmnisharpClientStatus>;
         output: Observable<OmniSharpAtom.OutputMessage[]>;
@@ -18,43 +19,44 @@ class ServerInformation implements OmniSharpAtom.IFeature {
 
     public model: ViewModel;
 
-    public activate() {
+    public activate(omni: OmniManager) {
         this.disposable = new CompositeDisposable();
+        this.omni = omni;
 
         const status = this.setupStatus();
         const output = this.setupOutput();
         const projects = this.setupProjects();
 
-        this.disposable.add(Omni.activeModel.subscribe(z => this.model = z));
-        this.observe = { status, output, projects, model: Omni.activeModel };
+        this.disposable.add(omni.activeModel.subscribe(z => this.model = z));
+        this.observe = { status, output, projects, model: omni.activeModel };
 
         this.disposable.add(dock.addWindow("output", "Omnisharp output", OutputWindow, {}));
     }
 
     private setupStatus() {
         // Stream the status from the active model
-        return Omni.activeModel
+        return this.omni.activeModel
             .switchMap(model => model.observe.status)
-            .share();
+            /*.share()*/;
     }
 
     private setupOutput() {
         // As the active model changes (when we go from an editor for ClientA to an editor for ClientB)
         // We want to make sure that the output field is
-        return Omni.activeModel
+        return this.omni.activeModel
             .switchMap(z => z.observe.output)
         // This starts us off with the current models output
-            .merge(Omni.activeModel.map(z => z.output))
+            .merge(this.omni.activeModel.map(z => z.output))
             .startWith([])
-            .share();
+            /*.share()*/;
     }
 
     private setupProjects() {
-        return Omni.activeModel
+        return this.omni.activeModel
             .switchMap(model => model.observe.projects)
         // This starts us off with the current projects output
-            .merge(Omni.activeModel.map(z => z.projects))
-            .share();
+            .merge(this.omni.activeModel.map(z => z.projects))
+            /*.share()*/;
     }
 
     public dispose() {

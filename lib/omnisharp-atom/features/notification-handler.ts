@@ -1,6 +1,6 @@
 import * as _ from "lodash";
 import {OmniSharp, OmniSharpAtom} from "../../omnisharp.ts";
-import {Omni} from "../../omni-sharp-server/omni";
+import {OmniManager} from "../../omni-sharp-server/omni";
 import {CompositeDisposable} from "../../Disposable";
 import * as path from "path";
 import * as $ from "jquery";
@@ -9,21 +9,21 @@ class NotificationHandler implements OmniSharpAtom.IFeature {
     private disposable: CompositeDisposable;
     private packageRestoreNotification: PackageRestoreNotification;
 
-    public activate() {
+    public activate(omni: OmniManager) {
         this.disposable = new CompositeDisposable();
 
         this.packageRestoreNotification = new PackageRestoreNotification();
 
-        this.disposable.add(Omni.listener.packageRestoreStarted.subscribe(e =>
+        this.disposable.add(omni.listener.packageRestoreStarted.subscribe(e =>
             this.packageRestoreNotification.handlePackageRestoreStarted(e)));
 
-        this.disposable.add(Omni.listener.packageRestoreFinished.subscribe(e =>
+        this.disposable.add(omni.listener.packageRestoreFinished.subscribe(e =>
             this.packageRestoreNotification.handlePackageRestoreFinished(e)));
 
-        this.disposable.add(Omni.listener.unresolvedDependencies.subscribe(e =>
+        this.disposable.add(omni.listener.unresolvedDependencies.subscribe(e =>
             this.packageRestoreNotification.handleUnresolvedDependencies(e)));
 
-        this.disposable.add(Omni.listener.events
+        this.disposable.add(omni.listener.events
             .filter(z => z.Event === "log")
             .filter(z => z.Body.Name === "omnisharpnx.PackagesRestoreTool")
             .filter(z => z.Body.Message.startsWith("Installing"))

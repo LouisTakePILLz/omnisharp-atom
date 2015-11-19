@@ -2,7 +2,7 @@ import {OmniSharpAtom} from "../../omnisharp.ts";
 import {CompositeDisposable} from "../../Disposable";
 import {Observable} from "@reactivex/rxjs";
 import * as _ from "lodash";
-import {Omni} from "../../omni-sharp-server/omni";
+import {OmniManager} from "../../omni-sharp-server/omni";
 import {ProjectViewModel} from "../../omni-sharp-server/project-view-model";
 import * as fs from "fs";
 import {fromNodeCallback} from "../../fromCallback";
@@ -18,7 +18,7 @@ class UpdateProject implements OmniSharpAtom.IAtomFeature {
     private _autoAddExternalProjects: boolean;
     private _nagAddExternalProjects: boolean;
 
-    public activate() {
+    public activate(omni: OmniManager) {
         this.disposable = new CompositeDisposable();
 
         atom.config.observe("omnisharp-atom.autoAdjustTreeView", (value: boolean) => this._autoAdjustTreeView = value);
@@ -31,23 +31,23 @@ class UpdateProject implements OmniSharpAtom.IAtomFeature {
         this._paths = atom.project.getPaths();
         atom.project.onDidChangePaths((paths: any) => this._paths = paths);
 
-        this.disposable.add(Omni.listener.model.projectAdded
+        this.disposable.add(omni.listener.model.projectAdded
             .filter(z => this._autoAddExternalProjects || this._nagAddExternalProjects)
             .filter(z => !_.startsWith(z.path, z.solutionPath))
             .filter(z => !_.any(this._paths, x => _.startsWith(z.path, x)))
-            .buffer(Omni.listener.model.projectAdded.throttleTime(1000).delay(1000))
+            .buffer(omni.listener.model.projectAdded.throttleTime(1000).delay(1000))
             .filter(z => z.length > 0)
             .subscribe(project => this.handleProjectAdded(project)));
 
-        this.disposable.add(Omni.listener.model.projectRemoved
+        this.disposable.add(omni.listener.model.projectRemoved
             .filter(z => this._autoAddExternalProjects || this._nagAddExternalProjects)
             .filter(z => !_.startsWith(z.path, z.solutionPath))
             .filter(z => _.any(this._paths, x => _.startsWith(z.path, x)))
-            .buffer(Omni.listener.model.projectRemoved.throttleTime(1000).delay(1000))
+            .buffer(omni.listener.model.projectRemoved.throttleTime(1000).delay(1000))
             .filter(z => z.length > 0)
             .subscribe(project => this.handleProjectRemoved(project)));
 
-        Omni.registerConfiguration(solution => {
+        omni.registerConfiguration(solution => {
             if (!solution.temporary) {
                 const path = _.find(this._paths, x => _.startsWith(x, solution.path) && x !== solution.path);
                 if (path) {

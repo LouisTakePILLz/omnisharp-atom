@@ -1,22 +1,21 @@
 /// <reference path="tsd.d.ts" />
 import {expect} from "chai";
-import {SolutionManager} from "../lib/omni-sharp-server/solution-manager";
 import {DriverState} from "omnisharp-client";
 import {Observable} from "@reactivex/rxjs";
 import {setupFeature} from "./test-helpers";
 
 describe("OmniSharp Atom", () => {
-    setupFeature([]);
+    const omniCb = setupFeature([]);
 
     describe("when the package is activated", () => {
         it("connect", (done) => {
             Observable.fromPromise<Atom.TextEditor>(<any>atom.workspace.open("simple/code-lens/CodeLens.cs"))
-                .mergeMap(editor => SolutionManager.getSolutionForEditor(editor))
+                .mergeMap(editor => omniCb().getSolutionForEditor(editor))
                 .mergeMap(x => x.state.startWith(x.currentState))
                 .filter(z => z === DriverState.Connected)
                 .take(1)
                 .subscribe(() => {
-                    expect(SolutionManager.connected).to.be.true;
+                    expect(omniCb().solutionManager.connected).to.be.true;
                     done();
                 }, null, () => done());
         });
@@ -29,14 +28,14 @@ describe("OmniSharp Atom", () => {
                 ])
             )
                 .mergeMap(x => Observable.from(x))
-                .mergeMap(editor => SolutionManager.getSolutionForEditor(editor))
+                .mergeMap(editor => omniCb().getSolutionForEditor(editor))
                 .mergeMap(x => x.state.startWith(x.currentState))
                 .filter(z => z === DriverState.Connected)
                 .take(2)
                 .subscribe({
                     complete: () => {
-                        expect(SolutionManager.connected).to.be.true;
-                        expect(SolutionManager.activeSolutions.length).to.be.eql(2);
+                        expect(omniCb().solutionManager.connected).to.be.true;
+                        expect(omniCb().solutionManager.activeSolutions.length).to.be.eql(2);
                         done();
                     }
                 });

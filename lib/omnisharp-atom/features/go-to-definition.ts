@@ -2,7 +2,7 @@ import {OmniSharp, OmniSharpAtom} from "../../omnisharp.ts";
 import * as _ from "lodash";
 import {CompositeDisposable} from "../../Disposable";
 import {Observable, Subscription} from "@reactivex/rxjs";
-import {Omni} from "../../omni-sharp-server/omni";
+import {OmniManager} from "../../omni-sharp-server/omni";
 import * as $ from "jquery";
 /* tslint:disable:variable-name */
 const Range: typeof TextBuffer.Range = require("atom").Range;
@@ -11,13 +11,15 @@ const identifierRegex = /^identifier|identifier$|\.identifier\./;
 
 class GoToDefinition implements OmniSharpAtom.IFeature {
     private disposable: CompositeDisposable;
+    private omni: OmniManager;
     private marker: any = null;
     private enhancedHighlighting: boolean;
     private wantMetadata: boolean;
 
-    public activate() {
+    public activate(omni: OmniManager) {
         this.disposable = new CompositeDisposable();
-        this.disposable.add(Omni.switchActiveEditor((editor, cd) => {
+        this.omni = omni;
+        this.disposable.add(omni.switchActiveEditor((editor, cd) => {
             const view = $(atom.views.getView(editor));
             const scroll = this.getFromShadowDom(view, ".scroll-view");
             if (!scroll[0]) {
@@ -91,7 +93,7 @@ class GoToDefinition implements OmniSharpAtom.IFeature {
         }));
 
         this.disposable.add(atom.emitter.on("symbols-view:go-to-declaration", () => this.goToDefinition()));
-        this.disposable.add(Omni.addTextEditorCommand("omnisharp-atom:go-to-definition", () => this.goToDefinition()));
+        this.disposable.add(omni.addTextEditorCommand("omnisharp-atom:go-to-definition", () => this.goToDefinition()));
         this.disposable.add(atom.config.observe("omnisharp-atom.wantMetadata", enabled => {
             this.wantMetadata = enabled;
         }));
@@ -105,12 +107,12 @@ class GoToDefinition implements OmniSharpAtom.IFeature {
         const editor = atom.workspace.getActiveTextEditor();
         if (editor) {
             const word = <any>editor.getWordUnderCursor();
-            Omni.request(editor, solution => solution.gotodefinition({
+            this.omni.request(editor, solution => solution.gotodefinition({
                 WantMetadata: this.wantMetadata
             }))
                 .subscribe((data: OmniSharp.Models.GotoDefinitionResponse) => {
                     if (data.FileName != null) {
-                        Omni.navigateTo(data);
+                        this.omni.navigateTo(data);
                     } else if (data.MetadataSource) {
                         /* tslint:disable:variable-name */
                         const {AssemblyName, TypeName} = data.MetadataSource;
@@ -164,7 +166,7 @@ class GoToDefinition implements OmniSharpAtom.IFeature {
             }
         } else {
             // If enhanced highlighting is off, fallback to the old method.
-            Omni.request(editor, solution => solution.gotodefinition({
+            this.omni.request(editor, solution => solution.gotodefinition({
                 Line: bufferPt.row,
                 Column: bufferPt.column
             })).filter(data => !!data.FileName || !!data.MetadataSource)
