@@ -17,7 +17,8 @@ describe("OmniSharp Atom", () => {
                 .take(1)
                 .subscribe(() => {
                     expect(SolutionManager.connected).to.be.true;
-                }, null, done);
+                    done();
+                }, null, () => done());
         });
 
         it("connect-simple2", (done) => {

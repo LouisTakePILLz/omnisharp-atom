@@ -37,10 +37,9 @@ export function fromNodeCallback(func: Function) {
     return function(...args: any[]) {
         return Observable.create((subscriber: Subscriber<any>) => {
             let cancelled = false;
-            function handler(...handlerArgs: any[]) {
+            function handler(err: any, ...handlerArgs: any[]) {
                 if (cancelled) return;
 
-                const err = handlerArgs[0];
                 if (err) { return subscriber.error(err); }
 
                 if (handlerArgs.length <= 1) {

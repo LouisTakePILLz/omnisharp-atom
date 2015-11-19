@@ -1,4 +1,4 @@
-import {join} from "path";
+import {join, normalize} from "path";
 import {readFileSync} from "fs";
 
 module.exports = function(
@@ -32,28 +32,36 @@ module.exports = function(
 
     (<any>window).atom = atom;
 
+    const atomDiv = document.createElement("div");
+    //atomDiv.style.display = "none";
+    //document.body.appendChild(atomDiv);
+    //atomDiv.appendChild(atom.views.getView(atom.workspace));
+
     const mochaDiv = document.createElement("div");
     mochaDiv.id = "mocha";
     document.body.appendChild(mochaDiv);
 
     const mochaCss = document.createElement("style");
-    mochaCss.innerHTML = readFileSync(join(__dirname, "..", "node_modules", "mocha", "mocha.css")).toString();
+    mochaCss.innerHTML = `html, body { overflow: inherit; }\n` + readFileSync(join(__dirname, "..", "node_modules", "mocha", "mocha.css")).toString();
     document.head.appendChild(mochaCss);
 
     const mocha = new mochaCtor({
         ui: "bdd",
         reporter: "html",
+        timeout: 30000
     });
 
-    return globby(testPaths.map(z => join(z, "**/*-spec.js")))
-        .then(paths => {
-            paths.forEach(path => {
-                mocha.addFile(path);
-            });
+    (<any>mocha).suite.beforeEach(() => {
+        atom.project.setPaths(<any>[testPaths]);
+    });
 
-            return new Promise<any>(resolve => {
-                mocha.run(resolve);
-            });
+    (<any>mocha).suite.afterEach(() => {
+        atom.packages.deactivatePackages();
+    });
+
+    return Promise.all(testPaths.map(path => globby([join(path, "**/*-spec.js")])))
+        .then((paths) => {
+            paths.forEach(fs => fs.forEach(f => mocha.addFile(f)));
+            return new Promise<number>(resolve => mocha.run(resolve));
         });
-
 };

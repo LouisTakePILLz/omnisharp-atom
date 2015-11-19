@@ -20,8 +20,8 @@ class CodeFormat implements OmniSharpAtom.IFeature {
         this.disposable.dispose();
     }
 
-    public format() {
-        const editor = atom.workspace.getActiveTextEditor();
+    public format(editor?: Atom.TextEditor) {
+        editor = editor || atom.workspace.getActiveTextEditor();
         if (editor) {
             const buffer = editor.getBuffer();
             Omni.request(editor, solution => {

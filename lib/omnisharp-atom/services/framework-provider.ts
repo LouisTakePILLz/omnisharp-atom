@@ -85,4 +85,4 @@ class NugetVersionProvider implements IAutocompleteProvider {
 }
 
 const providers = [new NugetNameProvider, new NugetVersionProvider];
-export default providers;
+module.exports = providers;

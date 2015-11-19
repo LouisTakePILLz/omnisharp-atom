@@ -26,7 +26,7 @@ describe("Command Runner", () => {
                 expect(commands.registeredCommands["omnisharp-dnx:commands-[kestrel]-(watch)"]).to.be.true;
                 expect(commands.registeredCommands["omnisharp-dnx:commands-[run]"]).to.be.true;
                 disposable.dispose();
-            }, null, done);
+            }, null, () => done());
     });
 
     it("returns the correct path for a given environment", (done) => {
@@ -41,6 +41,8 @@ describe("Command Runner", () => {
         } else {
             expect(result).to.be.eql("abc/bin/dnx");
         }
+
+        done();
     });
 
     // TODO: Add Tests for the daemon
