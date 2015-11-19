@@ -37,7 +37,7 @@ class FindUsages implements OmniSharpAtom.IFeature {
         )
             // For the UI we only need the qucik fixes.
             .map(z => <OmniSharp.Models.DiagnosticLocation[]>z.response.QuickFixes || [])
-            /*.share()*/;
+            .share();
 
         const usages = this._usagesSubject = new Subject<boolean>();
         const selected = this._selectedSubject = new Subject<boolean>();

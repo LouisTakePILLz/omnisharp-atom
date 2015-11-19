@@ -72,7 +72,7 @@ class FileMonitor implements OmniSharpAtom.IFeature {
                 this.filesMap.set(project, lock);
                 return lock.observable.map(path => ({ solution, filePath }));
             })
-            /*.share()*/;
+            .share();
             /*.pausable(pauser);*/
 
         this.disposable.add(changes

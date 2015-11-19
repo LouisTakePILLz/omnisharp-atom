@@ -192,7 +192,7 @@ export class Lens implements IDisposable {
                 solution.findusages({ FileName: this._path, Column: this._member.Column + 1, Line: this._member.Line, Buffer: null, Changes: null }, { silent: true })))
             .filter(x => x && x.QuickFixes && !!x.QuickFixes.length)
             .map(x => x && x.QuickFixes && x.QuickFixes.length - 1)
-            /*.share()*/;
+            .share();
 
         this._disposable.add(this._updateObservable
             .take(1)

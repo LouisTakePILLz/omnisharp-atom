@@ -301,8 +301,8 @@ export class Resizer<T extends IResizeProps> extends React.Component<T, {}> {
     private disposable = new CompositeDisposable();
 
     public componentDidMount() {
-        const mousemove = Observable.fromEvent<MouseEvent>(document.body, "mousemove")/*.share()*/;
-        const mouseup = Observable.fromEvent<MouseEvent>(document.body, "mouseup")/*.share()*/;
+        const mousemove = Observable.fromEvent<MouseEvent>(document.body, "mousemove").share();
+        const mouseup = Observable.fromEvent<MouseEvent>(document.body, "mouseup").share();
         const mousedown = this._mousedown.observable;
 
         const mousedrag = mousedown.mergeMap((md) => {

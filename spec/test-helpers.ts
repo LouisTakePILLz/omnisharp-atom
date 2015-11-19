@@ -17,7 +17,7 @@ export function setupFeature(features: string[], unitTestMode = true) {
 
         atom.packages.activatePackage("language-csharp")
             .then(() => atom.packages.activatePackage("omnisharp-atom"))
-            .then((pack: Atom.Package) => pack.mainModule._activated.delay(10).map(x => pack.mainModule.omni).toPromise())
+            .then((pack: Atom.Package) => pack.mainModule._activated.delay(10).map(() => pack.mainModule.omni).toPromise())
             .then((_omni: OmniManager) => {
                 omni = _omni;
                 omni.solutionManager.solutionObserver.errors.subscribe(error => console.error(JSON.stringify(error)));

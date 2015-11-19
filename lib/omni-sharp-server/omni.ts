@@ -149,7 +149,7 @@ export class OmniManager implements IDisposable {
                 return Observable.of(<OmniSharp.Models.DiagnosticLocation[]>[]);
             })
             .startWith([])
-            /*.share()*/;
+            .share();
 
 
         this._activeProject = (() => {
@@ -315,11 +315,11 @@ export class OmniManager implements IDisposable {
         if (editor) {
             result = this.solutionManager.getSolutionForEditor(<Atom.TextEditor>editor)
                 .filter(z => !!z)
-                .mergeMap(solutionCallback)/*.share()*/;
+                .mergeMap(solutionCallback).share();
         } else {
             result = this.solutionManager.activeSolution.take(1)
                 .filter(z => !!z)
-                .mergeMap(solutionCallback)/*.share()*/;
+                .mergeMap(solutionCallback).share();
         }
 
         // Ensure that the underying promise is connected

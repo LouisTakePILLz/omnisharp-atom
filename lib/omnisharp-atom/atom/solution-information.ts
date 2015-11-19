@@ -87,7 +87,7 @@ class SolutionInformation implements OmniSharpAtom.IFeature {
     private setupSolutions() {
         const solutions = this.omni.solutionManager.observeActiveSolutions
             .map(x => x.map(z => z.model))
-            /*.share()*/;
+            .share();
 
         this.disposable.add(solutions.subscribe(o => {
             this.solutions = o;

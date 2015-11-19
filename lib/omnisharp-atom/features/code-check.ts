@@ -55,7 +55,7 @@ class CodeCheck implements OmniSharpAtom.IFeature {
                 .filter(() => !editor.isDestroyed())
                 .mergeMap(() => this._doCodeCheck(editor))
                 .map(response => response.QuickFixes || [])
-                /*.share()*/;
+                .share();
 
             this._editorSubjects.set(editor, () => {
                 const result = o.take(1);

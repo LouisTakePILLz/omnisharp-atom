@@ -37,7 +37,7 @@ class ServerInformation implements OmniSharpAtom.IFeature {
         // Stream the status from the active model
         return this.omni.activeModel
             .switchMap(model => model.observe.status)
-            /*.share()*/;
+            .share();
     }
 
     private setupOutput() {
@@ -48,7 +48,7 @@ class ServerInformation implements OmniSharpAtom.IFeature {
         // This starts us off with the current models output
             .merge(this.omni.activeModel.map(z => z.output))
             .startWith([])
-            /*.share()*/;
+            .share();
     }
 
     private setupProjects() {
@@ -56,7 +56,7 @@ class ServerInformation implements OmniSharpAtom.IFeature {
             .switchMap(model => model.observe.projects)
         // This starts us off with the current projects output
             .merge(this.omni.activeModel.map(z => z.projects))
-            /*.share()*/;
+            .share();
     }
 
     public dispose() {

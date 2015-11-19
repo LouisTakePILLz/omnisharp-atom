@@ -93,7 +93,7 @@ export class SolutionInstanceManager implements IDisposable {
         this._disposable.add(this._solutionDisposable);
 
         this._activeSolutionsSubject.next([]);
-        
+
         const a = this._activeSolution.publishReplay(1);
         this._disposable.add(a.connect());
         this._activeSolutionObserable = a
@@ -454,7 +454,7 @@ export class SolutionInstanceManager implements IDisposable {
 
         const subject = new Subject<[string, Solution, boolean]>();
         this._findSolutionCache.set(location, subject);
-        subject.do({ complete: () => this._findSolutionCache.delete(location) });
+        subject.subscribe({ complete: () => this._findSolutionCache.delete(location) });
 
         const project = this._intersectAtomProjectPath(directory);
         const cb = (candidates: { path: string; isProject: boolean }[]) => {
