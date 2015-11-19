@@ -71,7 +71,7 @@
     "fs-plus": "^2.3.1",
     "fuzzaldrin": "^2.1.0",
     "generator-aspnet": "0.0.91",
-    "glob": "^5.0.15",
+    "globby": "^4.0.0",
     "gulp": "^3.8.11",
     "gulp-babel": "^6.1.0",
     "gulp-tslint": "^3.6.0",

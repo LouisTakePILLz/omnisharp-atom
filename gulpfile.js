@@ -56,7 +56,7 @@ function tsTranspiler(source, dest) {
         //.pipe(tslint.report('prose'));
 }
 
-gulp.task('typescript', ['compile-info', 'clean'], function() {
+gulp.task('typescript', ['clean'], function() {
     var lib = tsTranspiler(gulp.src(metadata.lib), './lib');
     var spec = tsTranspiler(gulp.src(metadata.spec), './spec');
 
@@ -77,7 +77,7 @@ gulp.task('compile-info', [], function() {
     return compile;
 });
 
-gulp.task('clean', ['compile-info', 'clean:lib', 'clean:spec']);
+gulp.task('clean', ['clean:lib', 'clean:spec']);
 
 gulp.task('clean:lib', function(done) {
     del(metadata.lib.map(function(z) {
@@ -137,8 +137,8 @@ gulp.task('file-watch', function() {
     return merge(lib, spec);
 });
 
-gulp.task('npm-postinstall', ['typescript', 'compile-info']);
-gulp.task('npm-prepublish', ['typescript', 'compile-info']);
+gulp.task('npm-postinstall', ['typescript']);
+gulp.task('npm-prepublish', ['typescript',]);
 
 // The default task (called when you run `gulp` from CLI)
-gulp.task('default', ['typescript', 'compile-info']);
+gulp.task('default', ['typescript']);
